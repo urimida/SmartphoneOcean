@@ -1,0 +1,75 @@
+[
+  {
+    "storeName": "맛있는 치킨집",
+    "orderItems": ["후라이드 치킨 1마리", "콜라 500ml", "치즈볼 5개"],
+    "totalPrice": 18000,
+    "reviewEvent": true,
+    "reviewMessage": "리뷰 작성 시 치킨 무료 쿠폰 증정!"
+  },
+  {
+    "storeName": "신선한 피자",
+    "orderItems": ["페퍼로니 피자 L", "치즈스틱 2개", "사이다 1.5L"],
+    "totalPrice": 25000,
+    "reviewEvent": true,
+    "reviewMessage": "리뷰 남기면 다음 주문 20% 할인!"
+  },
+  {
+    "storeName": "맛있는 중화요리",
+    "orderItems": ["짜장면 2그릇", "탕수육", "양장피"],
+    "totalPrice": 22000,
+    "reviewEvent": false,
+    "reviewMessage": ""
+  },
+  {
+    "storeName": "고기고기",
+    "orderItems": ["삼겹살 300g", "된장찌개", "공기밥 2개"],
+    "totalPrice": 28000,
+    "reviewEvent": true,
+    "reviewMessage": "리뷰 작성 시 소주 서비스!"
+  },
+  {
+    "storeName": "파스타의 달인",
+    "orderItems": ["크림파스타", "마르게리타 피자", "샐러드"],
+    "totalPrice": 32000,
+    "reviewEvent": true,
+    "reviewMessage": "리뷰 남기면 디저트 무료!"
+  },
+  {
+    "storeName": "맛있는 떡볶이",
+    "orderItems": ["떡볶이 대", "순대", "어묵 3개"],
+    "totalPrice": 12000,
+    "reviewEvent": true,
+    "reviewMessage": "리뷰 작성 시 떡볶이 추가 서비스!"
+  },
+  {
+    "storeName": "햄버거킹",
+    "orderItems": ["치즈버거 세트", "감자튀김", "콜라"],
+    "totalPrice": 15000,
+    "reviewEvent": false,
+    "reviewMessage": ""
+  },
+  {
+    "storeName": "돈까스 전문점",
+    "orderItems": ["왕돈까스", "우동", "샐러드"],
+    "totalPrice": 19000,
+    "reviewEvent": true,
+    "reviewMessage": "리뷰 남기면 다음 주문 10% 할인!"
+  },
+  {
+    "storeName": "맛있는 김밥",
+    "orderItems": ["김밥 2줄", "라면", "어묵탕"],
+    "totalPrice": 8000,
+    "reviewEvent": true,
+    "reviewMessage": "리뷰 작성 시 김밥 추가 서비스!"
+  },
+  {
+    "storeName": "스시야",
+    "orderItems": ["연어초밥 10pcs", "새우초밥 5pcs", "미소시루"],
+    "totalPrice": 35000,
+    "reviewEvent": true,
+    "reviewMessage": "리뷰 남기면 다음 주문 15% 할인!"
+  }
+]
+
+
+
