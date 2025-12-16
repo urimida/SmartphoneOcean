@@ -124,6 +124,35 @@ class OceanBackground {
     // 3) 바다 그라디언트 (SURFACE_Y ~ bottom)
     // 하늘과 바다 경계를 자연스럽게 연결
     const skyBottomColor = skyLow; // 하늘의 마지막 색상
+    
+    // 더 영롱하고 다양한 스펙트럼을 위한 중간 색상 생성
+    // 기본 색상들을 더 채도 높게 조정
+    const waterTopBright = pg.color(
+      min(255, topColorArray[0] * 1.15),
+      min(255, topColorArray[1] * 1.1),
+      min(255, topColorArray[2] * 1.05)
+    );
+    const waterTopVibrant = pg.color(
+      min(255, topColorArray[0] * 0.95),
+      min(255, topColorArray[1] * 1.2),
+      min(255, topColorArray[2] * 1.15)
+    );
+    const waterMidBright = pg.color(
+      min(255, midColorArray[0] * 1.2),
+      min(255, midColorArray[1] * 1.15),
+      min(255, midColorArray[2] * 1.1)
+    );
+    const waterMidDeep = pg.color(
+      min(255, midColorArray[0] * 0.85),
+      min(255, midColorArray[1] * 0.9),
+      min(255, midColorArray[2] * 0.95)
+    );
+    const waterBottomDeep = pg.color(
+      min(255, bottomColorArray[0] * 1.1),
+      min(255, bottomColorArray[1] * 1.05),
+      min(255, bottomColorArray[2] * 1.0)
+    );
+    
     for (let y = surfY; y < pg.height; y++) {
       let t = (y - surfY) / (pg.height - surfY);
       t = constrain(t, 0, 1);
@@ -132,26 +161,74 @@ class OceanBackground {
       let c;
       if (t < 0.06) {
         const tt = t / 0.06;
-        c = pg.lerpColor(skyBottomColor, waterTop, tt);
+        // smoothstep으로 더 부드럽게
+        const smoothTt = tt * tt * (3 - 2 * tt);
+        c = pg.lerpColor(skyBottomColor, waterTop, smoothTt);
       } else {
-        // 매끄러운 단일 그라디언트 (중간에 경계가 보이지 않도록)
+        // 더 풍부한 다단계 그라디언트 - 경계 없이 부드럽게 전환
         const depth = (t - 0.06) / 0.94;
-        const s = depth * depth * (3 - 2 * depth); // smoothstep
-        // waterTop → waterMid → waterBottom을 자연스럽게 이어줌
-        if (s < 0.5) {
-          const tt = s * 2.0;
-          c = pg.lerpColor(waterTop, waterMid, tt);
-        } else {
-          const tt = (s - 0.5) * 2.0;
-          c = pg.lerpColor(waterMid, waterBottom, tt);
+        // 전체 구간에 대해 더 부드러운 smoothstep 적용
+        const s = depth * depth * depth * (depth * (depth * 6 - 15) + 10); // smootherstep (5차 함수)
+        
+        // 색상 키포인트 배열 (0.0 ~ 1.0 사이의 위치와 색상)
+        const colorStops = [
+          { pos: 0.0, color: waterTop },
+          { pos: 0.2, color: waterTopVibrant },
+          { pos: 0.4, color: waterTopBright },
+          { pos: 0.6, color: waterMidBright },
+          { pos: 0.8, color: waterMidDeep },
+          { pos: 1.0, color: waterBottomDeep }
+        ];
+        
+        // s 값에 따라 두 색상 사이를 부드럽게 보간
+        let c1, c2, tLocal;
+        for (let i = 0; i < colorStops.length - 1; i++) {
+          if (s >= colorStops[i].pos && s <= colorStops[i + 1].pos) {
+            // 현재 구간 내에서의 위치 (0~1)
+            tLocal = (s - colorStops[i].pos) / (colorStops[i + 1].pos - colorStops[i].pos);
+            // smoothstep으로 더 부드럽게
+            const smoothT = tLocal * tLocal * (3 - 2 * tLocal);
+            c1 = colorStops[i].color;
+            c2 = colorStops[i + 1].color;
+            c = pg.lerpColor(c1, c2, smoothT);
+            break;
+          }
         }
       }
 
-      // 수면 근처 노란빛
+      // 수면 근처 노란빛 (더 영롱하게, 부드러운 페이드)
       if (t < 0.18) {
         let yellowAmount = (0.18 - t) / 0.18;
-        let yellowTint = pg.color(255, 240, 180, yellowAmount * 35);
-        c = pg.lerpColor(c, yellowTint, yellowAmount * 0.25);
+        // smoothstep으로 부드러운 페이드
+        yellowAmount = yellowAmount * yellowAmount * (3 - 2 * yellowAmount);
+        let yellowTint = pg.color(255, 245, 170, yellowAmount * 40);
+        c = pg.lerpColor(c, yellowTint, yellowAmount * 0.3);
+      }
+      
+      // 중간 깊이에서 청록/시안 톤 추가 (더 영롱한 느낌, 부드러운 페이드)
+      if (t > 0.15 && t < 0.5) {
+        let normalizedT = (t - 0.15) / 0.35;
+        // 부드러운 sin 곡선
+        let cyanAmount = sin(normalizedT * PI) * 0.15;
+        let cyanTint = pg.color(
+          min(255, red(c) + cyanAmount * 20),
+          min(255, green(c) + cyanAmount * 30),
+          min(255, blue(c) + cyanAmount * 25)
+        );
+        c = pg.lerpColor(c, cyanTint, abs(cyanAmount));
+      }
+      
+      // 깊은 곳에서 보라/인디고 톤 추가 (스펙트럼 다양성, 부드러운 페이드)
+      if (t > 0.6 && t < 0.9) {
+        let normalizedT = (t - 0.6) / 0.3;
+        // 부드러운 sin 곡선
+        let purpleAmount = sin(normalizedT * PI) * 0.12;
+        let purpleTint = pg.color(
+          min(255, red(c) + purpleAmount * 15),
+          min(255, green(c) + purpleAmount * 10),
+          min(255, blue(c) + purpleAmount * 20)
+        );
+        c = pg.lerpColor(c, purpleTint, abs(purpleAmount));
       }
 
       pg.stroke(c);

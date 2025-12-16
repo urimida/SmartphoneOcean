@@ -43,6 +43,8 @@ let showShortformDetail = false; // 숏폼 상세 보기 여부
 let showShoppingDetail = false; // 쇼핑 상세 보기 여부
 let showNovelDetail = false; // 웹소설 상세 보기 여부
 let showNoteConfirm = false; // 탐사 일지 확인 모달 표시 여부
+let showNoteBook = false; // 수첩 화면 표시 여부
+let noteBookPage = 0; // 수첩 현재 페이지 (0, 1, 2)
 let lastClosedJellyfish = null; // 마지막으로 닫은 해파리 (같은 해파리에서 바로 다시 열리지 않도록)
 let lastClosedSeahorse = null; // 마지막으로 닫은 해마
 let lastClosedWhale = null; // 마지막으로 닫은 고래
@@ -71,7 +73,7 @@ const PROLOGUE_MESSAGES = [
 // -----------------------
 // 성능 관련 상수
 // -----------------------
-const MAX_BUBBLES = 250;   // 버블 최대 개수 제한
+const MAX_BUBBLES = 100;   // 버블 최대 개수 제한 (성능 최적화)
 const BUBBLE_SPAWN_PROB_SWIM = 0.3;
 const BUBBLE_SPAWN_PROB_MOUSE = 0.2;
 
@@ -96,6 +98,7 @@ let currentOceanThemeIndex = -1;
 
 // 해양 분위기(바다 테마) 선택 오버레이 표시 여부
 let showOceanThemeOverlay = false;
+let oceanThemeScrollOffset = 0; // 스크롤 오프셋
 
 // 공통 모달 스타일 상수 (코너 반경 R, 배경 알파)
 const UI_MODAL_RADIUS = 10;
@@ -119,6 +122,12 @@ let noteHalo = {
 
 // 수첩(탐사 일지)에 한 번이라도 내용이 들어갔는지 여부
 let hasNoteContent = false;
+
+// 탐사 통계 변수
+let explorationStartTime = 0; // 탐사 시작 시간 (밀리초)
+let totalDistanceTraveled = 0; // 총 이동 거리
+let lastSwimmerX = 0; // 이전 프레임의 다이버 X 위치
+let lastSwimmerY = 0; // 이전 프레임의 다이버 Y 위치
 
 // 현재 바다 색상에 맞는 생물 필터 색상 (살짝만 섞어서 전체 톤 맞추기)
 function getOceanLifeTintRGB() {
@@ -327,6 +336,14 @@ function setup() {
   for (let i = 0; i < birdCount; i++) {
     birds.push(new Bird());
   }
+
+  // 탐사 통계 초기화
+  explorationStartTime = millis();
+  totalDistanceTraveled = 0;
+  if (swimmer) {
+    lastSwimmerX = swimmer.x;
+    lastSwimmerY = swimmer.y;
+  }
 }
 
 function windowResized() {
@@ -431,6 +448,13 @@ const OCEAN_THEMES = [
     topColor: [100, 220, 200],
     midColor: [50, 160, 150],
     bottomColor: [15, 80, 75]
+  },
+  // 11. 핑크빛 바다 (로맨틱한 핑크 톤)
+  {
+    name: '핑크빛 바다',
+    topColor: [255, 200, 220],
+    midColor: [240, 150, 180],
+    bottomColor: [180, 80, 120]
   }
 ];
 
@@ -785,6 +809,16 @@ function draw() {
 
   // 생명체 업데이트
   swimmer.update();
+  
+  // 이동 거리 추적
+  if (swimmer) {
+    const dx = swimmer.x - lastSwimmerX;
+    const dy = swimmer.y - lastSwimmerY;
+    const distance = sqrt(dx * dx + dy * dy);
+    totalDistanceTraveled += distance;
+    lastSwimmerX = swimmer.x;
+    lastSwimmerY = swimmer.y;
+  }
 
   // 버블 업데이트 및 제거
   for (let i = bubbles.length - 1; i >= 0; i--) {
@@ -807,7 +841,7 @@ function draw() {
     const dy = swimmer.y - jellyfishes[i].y;
     const dist = sqrt(dx * dx + dy * dy);
     
-    if (!currentModal && !showChatDetail && !showDeliveryDetail && !showShortformDetail && !showShoppingDetail && !showNovelDetail && !showPrologue) {
+    if (!currentModal && !showChatDetail && !showDeliveryDetail && !showShortformDetail && !showShoppingDetail && !showNovelDetail && !showPrologue && !showNoteBook) {
       if (dist < INTERACTION_DISTANCE && jellyfishes[i].chatData && 
           !jellyfishes[i].dismissed && lastClosedJellyfish !== jellyfishes[i]) {
         currentModal = { type: 'jellyfish', jellyfish: jellyfishes[i], data: jellyfishes[i].chatData };
@@ -830,7 +864,7 @@ function draw() {
     const dy = swimmer.y - seahorses[i].y;
     const dist = sqrt(dx * dx + dy * dy);
     
-    if (!currentModal && !showChatDetail && !showDeliveryDetail && !showShortformDetail && !showShoppingDetail && !showNovelDetail && !showPrologue) {
+    if (!currentModal && !showChatDetail && !showDeliveryDetail && !showShortformDetail && !showShoppingDetail && !showNovelDetail && !showPrologue && !showNoteBook) {
       if (dist < INTERACTION_DISTANCE && seahorses[i].deliveryData && 
           !seahorses[i].dismissed && lastClosedSeahorse !== seahorses[i]) {
         currentModal = { type: 'seahorse', seahorse: seahorses[i], data: seahorses[i].deliveryData };
@@ -853,7 +887,7 @@ function draw() {
     const dy = swimmer.y - whales[i].y;
     const dist = sqrt(dx * dx + dy * dy);
     
-    if (!currentModal && !showChatDetail && !showDeliveryDetail && !showShortformDetail && !showShoppingDetail && !showNovelDetail && !showPrologue) {
+    if (!currentModal && !showChatDetail && !showDeliveryDetail && !showShortformDetail && !showShoppingDetail && !showNovelDetail && !showPrologue && !showNoteBook) {
       if (dist < INTERACTION_DISTANCE && whales[i].shortformData && 
           !whales[i].dismissed && lastClosedWhale !== whales[i]) {
         currentModal = { type: 'whale', whale: whales[i], data: whales[i].shortformData };
@@ -876,7 +910,7 @@ function draw() {
     const dy = swimmer.y - fishes[i].y;
     const dist = sqrt(dx * dx + dy * dy);
     
-    if (!currentModal && !showChatDetail && !showDeliveryDetail && !showShortformDetail && !showShoppingDetail && !showNovelDetail && !showPrologue) {
+    if (!currentModal && !showChatDetail && !showDeliveryDetail && !showShortformDetail && !showShoppingDetail && !showNovelDetail && !showPrologue && !showNoteBook) {
       if (dist < INTERACTION_DISTANCE && fishes[i].shoppingData && 
           !fishes[i].dismissed && lastClosedFish !== fishes[i]) {
         currentModal = { type: 'fish', fish: fishes[i], data: fishes[i].shoppingData };
@@ -899,7 +933,7 @@ function draw() {
     const dy = swimmer.y - minifishes[i].y;
     const dist = sqrt(dx * dx + dy * dy);
     
-    if (!currentModal && !showChatDetail && !showDeliveryDetail && !showShortformDetail && !showShoppingDetail && !showNovelDetail && !showPrologue) {
+    if (!currentModal && !showChatDetail && !showDeliveryDetail && !showShortformDetail && !showShoppingDetail && !showNovelDetail && !showPrologue && !showNoteBook) {
       if (dist < INTERACTION_DISTANCE && minifishes[i].novelData && 
           !minifishes[i].dismissed && lastClosedMiniFish !== minifishes[i]) {
         currentModal = { type: 'minifish', minifish: minifishes[i], data: minifishes[i].novelData };
@@ -971,8 +1005,13 @@ function draw() {
   push();
   translate(vt.offsetX, 0);
   
-  // 배경 렌더링 (상세 모드일 때는 블러 적용)
-  if ((showChatDetail || showDeliveryDetail || showShortformDetail || showShoppingDetail || showNovelDetail) && currentModal) {
+   // 배경 렌더링 (상세 모드일 때는 블러 적용, 수첩 화면일 때는 어두운 오버레이)
+   if (showNoteBook) {
+     image(pgWobble, 0, 0, vt.drawW, vt.drawH, 0, cameraY, BASE_W, vt.visibleWorldHeight);
+     fill(0, 0, 0, 200);
+     noStroke();
+     rect(0, 0, width, height);
+   } else if ((showChatDetail || showDeliveryDetail || showShortformDetail || showShoppingDetail || showNovelDetail) && currentModal) {
     pgBlurred.push();
     pgBlurred.translate(vt.offsetX, 0);
     pgBlurred.image(pgWobble, 0, 0, vt.drawW, vt.drawH, 0, cameraY, BASE_W, vt.visibleWorldHeight);
@@ -995,22 +1034,42 @@ function draw() {
   // UI 요소 그리기
   // drawHandGlowEffect(); // 함수가 정의되지 않아 주석 처리
   
-  if (showPrologue) {
-    drawPrologueModal();
+  // 수첩 화면이 열려있으면 다른 UI는 그리지 않음
+  if (!showNoteBook) {
+    if (showPrologue) {
+      drawPrologueModal();
+    }
+    
+    drawModal();
+    drawExplorationLogButton();
+    drawNoteGlowEffect();
+    drawOceanMoodSelector();
+    drawHandDebug(); // 카메라 디버그 화면 표시
+
+    if (showNoteConfirm) {
+      drawInteractionModal("디지털 오션에서 나와\n나의 탐사 일지를 확인하시겠습니까?");
+    }
   }
   
-  drawModal();
-  drawExplorationLogButton();
-  drawNoteGlowEffect();
-  drawOceanMoodSelector();
-  drawHandDebug(); // 카메라 디버그 화면 표시
-
-  if (showNoteConfirm) {
-    drawInteractionModal("디지털 오션에서 나와\n나의 탐사 일지를 확인하시겠습니까?");
+  if (showNoteBook) {
+    drawNoteBook();
   }
   
   if (showChatDetail || showDeliveryDetail || showShortformDetail || showShoppingDetail || showNovelDetail) {
     drawTextSizeControl();
+  }
+  
+  // 탐사일지 버튼 호버링이 아닐 때 기본 커서로 복원
+  if (!showNoteBook && !showPrologue) {
+    const imgSize = 60 * 2.5;
+    const btnX = width - imgSize - 50;
+    const btnY = height - imgSize - 60;
+    const clickPadding = 20;
+    const isHovering = mouseX >= btnX - clickPadding && mouseX <= btnX + imgSize + clickPadding &&
+                       mouseY >= btnY - clickPadding && mouseY <= btnY + imgSize + clickPadding;
+    if (!isHovering) {
+      cursor(ARROW);
+    }
   }
 }
 
@@ -1023,6 +1082,16 @@ function drawExplorationLogButton() {
   const imgSize = 60 * 2.5;
   const btnX = width - imgSize - 50;
   const btnY = height - imgSize - 60;
+  
+  // 호버링 체크 (클릭 범위보다 넓게)
+  const clickPadding = 20; // 클릭 범위 확장
+  const isHovering = mouseX >= btnX - clickPadding && mouseX <= btnX + imgSize + clickPadding &&
+                     mouseY >= btnY - clickPadding && mouseY <= btnY + imgSize + clickPadding;
+  
+  // 호버링 시 포인터 커서로 변경
+  if (isHovering && !showNoteBook && !showPrologue) {
+    cursor('pointer');
+  }
   
   image(imgNote, btnX, btnY, imgSize, imgSize);
   noteBtnCenterX = btnX + imgSize / 2;
@@ -1186,7 +1255,7 @@ function drawOceanMoodSelector() {
 
   // 라벨 텍스트
   const labelX = swatchX + swatchR + innerGap + 4;
-  const labelY = barY;
+  const labelY = barY - 2; // 2픽셀 위로 올림
   push();
   textAlign(LEFT, CENTER);
   const baseLabelSize = 13;
@@ -1206,7 +1275,7 @@ function drawOceanMoodSelector() {
   // 토글 표시
   fill(210);
   textAlign(RIGHT, CENTER);
-  text(showOceanThemeOverlay ? "▲" : "▼", barX + barWidth - paddingX + 8, barY + 1);
+  text(showOceanThemeOverlay ? "▲" : "▼", barX + barWidth - paddingX + 8, barY - 1); // 2픽셀 위로 올림 (1 -> -1)
 
   // 오버레이 모달 (여러 테마 선택)
   if (showOceanThemeOverlay) {
@@ -1240,17 +1309,32 @@ function drawOceanMoodSelector() {
     text("마음에 드는 바다 색을 골라보세요.", panelX + innerPadding, cursorY);
     cursorY += 26;
 
-    // 테마 리스트 (세로 스택)
+    // 테마 리스트 (세로 스택, 스크롤 가능)
     const chipH = 30;
     const chipGapY = 8;
     const chipPaddingX = 14;
+    
+    // 스크롤 가능한 영역 높이 계산
+    const listAreaTop = cursorY;
+    const listAreaBottom = panelY + panelH - innerPadding;
+    const listAreaHeight = listAreaBottom - listAreaTop;
+    const totalListHeight = OCEAN_THEMES.length * (chipH + chipGapY) - chipGapY;
+    
+    // 스크롤 오프셋 제한
+    const maxScroll = max(0, totalListHeight - listAreaHeight);
+    oceanThemeScrollOffset = constrain(oceanThemeScrollOffset, 0, maxScroll);
+
+    // 스크롤 마스킹을 위한 클리핑 영역
+    push();
+    clip(panelX, listAreaTop, panelW, listAreaHeight);
 
     for (let i = 0; i < OCEAN_THEMES.length; i++) {
       const theme = OCEAN_THEMES[i];
       const isActiveTheme = i === activeIndex;
 
-      const chipY = cursorY + i * (chipH + chipGapY);
-      if (chipY + chipH > panelY + panelH - innerPadding) break; // 패널을 넘으면 그만 그림
+      const chipY = cursorY + i * (chipH + chipGapY) - oceanThemeScrollOffset;
+      // 화면에 보이는 영역에만 그리기
+      if (chipY + chipH < listAreaTop || chipY > listAreaBottom) continue;
 
       const chipX = panelX + innerPadding;
       const chipW = panelW - innerPadding * 2;
@@ -1311,6 +1395,27 @@ function drawOceanMoodSelector() {
       text(theme.name, nameX, nameY);
       pop();
     }
+    
+    pop(); // 클리핑 영역 종료
+    
+    // 스크롤바 표시 (필요한 경우)
+    if (totalListHeight > listAreaHeight) {
+      const scrollbarX = panelX + panelW - 8;
+      const scrollbarY = listAreaTop;
+      const scrollbarW = 4;
+      const scrollbarH = listAreaHeight;
+      const scrollbarThumbH = (listAreaHeight / totalListHeight) * scrollbarH;
+      const scrollbarThumbY = scrollbarY + (oceanThemeScrollOffset / maxScroll) * (scrollbarH - scrollbarThumbH);
+      
+      // 스크롤바 배경
+      fill(30, 50, 80, 150);
+      noStroke();
+      rect(scrollbarX, scrollbarY, scrollbarW, scrollbarH, 2);
+      
+      // 스크롤바 썸
+      fill(100, 150, 200, 200);
+      rect(scrollbarX, scrollbarThumbY, scrollbarW, scrollbarThumbH, 2);
+    }
   }
 
   pop();
@@ -1352,6 +1457,7 @@ function handleOceanMoodClick() {
     if (mouseX < panelX || mouseX > panelX + panelW ||
         mouseY < panelY || mouseY > panelY + panelH) {
       showOceanThemeOverlay = false;
+      oceanThemeScrollOffset = 0; // 스크롤 초기화
       return true;
     }
 
@@ -1363,10 +1469,17 @@ function handleOceanMoodClick() {
     const chipGapY = 8;
     const chipX = panelX + innerPadding;
     const chipW = panelW - innerPadding * 2;
+    
+    // 스크롤 가능한 영역 높이 계산
+    const listAreaTop = cursorY;
+    const listAreaBottom = panelY + panelH - innerPadding;
+    const totalListHeight = OCEAN_THEMES.length * (chipH + chipGapY) - chipGapY;
+    const listAreaHeight = listAreaBottom - listAreaTop;
 
     for (let i = 0; i < OCEAN_THEMES.length; i++) {
-      const chipY = cursorY + i * (chipH + chipGapY);
-      if (chipY + chipH > panelY + panelH - innerPadding) break;
+      const chipY = cursorY + i * (chipH + chipGapY) - oceanThemeScrollOffset;
+      // 화면에 보이는 영역에만 클릭 처리
+      if (chipY + chipH < listAreaTop || chipY > listAreaBottom) continue;
 
       if (mouseX >= chipX && mouseX <= chipX + chipW &&
           mouseY >= chipY && mouseY <= chipY + chipH) {
@@ -1376,6 +1489,7 @@ function handleOceanMoodClick() {
         weatherColors.bottomColor = theme.bottomColor;
         currentOceanThemeIndex = i;
         showOceanThemeOverlay = false;
+        oceanThemeScrollOffset = 0; // 스크롤 초기화
 
         if (oceanBackground && pgBase) {
           oceanBackground.paintStaticScene(pgBase);
@@ -1393,6 +1507,7 @@ function handleOceanMoodClick() {
   if (mouseX >= barX && mouseX <= barX + barWidth &&
       mouseY >= barTop && mouseY <= barBottom) {
     showOceanThemeOverlay = true;
+    oceanThemeScrollOffset = 0; // 스크롤 초기화
     return true;
   }
 
@@ -1405,26 +1520,24 @@ function drawTextSizeControl() {
   noSmooth();
   
   const controlX = width / 2;
-  const controlY = 85;
+  // 닫기 버튼 바로 위에 위치 (닫기 버튼 높이 35, 간격 20)
+  const controlY = closeHintY - 35 - 20;
   const sliderW = 300;
   const sliderH = 8;
   const thumbSize = 24;
   
-  fill(10, 25, 50, 220);
-  stroke(90, 140, 200, 235);
-  strokeWeight(1.5);
-  const panelW = sliderW + 80;
-  const panelH = 80; // 패딩 증가를 위해 높이 증가 (65 → 80)
-  rect(controlX - panelW / 2, controlY - panelH / 2, panelW, panelH, 8);
+  // 네모박스 제거 - 패널 배경 없이 슬라이더만 표시
   
+  // 글자 크기 라벨
   fill(200, 220, 255);
   textSize(12);
   textAlign(CENTER, CENTER);
-  text("글자 크기", controlX, controlY - 25); // 위쪽 패딩 증가 (18 → 25)
+  text("글자 크기", controlX, controlY - 20);
   
   const sliderX = controlX - sliderW / 2;
-  const sliderY = controlY + 3;
+  const sliderY = controlY;
   
+  // 슬라이더 트랙
   fill(40, 60, 90, 200);
   stroke(70, 110, 150, 200);
   strokeWeight(1);
@@ -1433,16 +1546,18 @@ function drawTextSizeControl() {
   const normalizedValue = (textDetailSizeScale - TEXT_SIZE_MIN) / (TEXT_SIZE_MAX - TEXT_SIZE_MIN);
   const thumbX = sliderX + normalizedValue * sliderW;
   
+  // 슬라이더 썸
   const isThumbHover = dist(mouseX, mouseY, thumbX, sliderY) < thumbSize / 2 + 5;
   fill(isThumbHover ? color(120, 180, 240, 255) : color(100, 160, 220, 255));
   stroke(150, 200, 255, 255);
   strokeWeight(2);
   ellipse(thumbX, sliderY, thumbSize, thumbSize);
   
+  // 크기 퍼센트 표시
   fill(200, 220, 255);
   textSize(11);
   textAlign(CENTER, CENTER);
-  text(`${int(textDetailSizeScale * 100)}%`, controlX, sliderY + 30); // 아래쪽 패딩 증가 (22 → 30)
+  text(`${int(textDetailSizeScale * 100)}%`, controlX, sliderY + 25);
   
   pop();
 }
@@ -1456,30 +1571,32 @@ function drawHandDebug() {
   push();
   noStroke();
 
-  // --- 중앙 상단 카메라 미리보기 (임시 디버그용) ---
+  // --- 중앙 상단 카메라 미리보기 (투명도 0%로 숨김, 하지만 그 자리에 유지) ---
   if (video && video.width && video.height) {
     const camWidth = 260;
     const camHeight = 180;
     const camX = (width - camWidth) / 2;
     const camY = 10;
 
-    // 테두리 패널
-    fill(5, 15, 35, 220);
-    stroke(120, 170, 230, 230);
+    // 테두리 패널 (투명도 0%)
+    fill(5, 15, 35, 0);
+    stroke(120, 170, 230, 0);
     strokeWeight(2);
     rect(camX - 6, camY - 6, camWidth + 12, camHeight + 12, 10);
 
-    // 좌우 반전된 이미지(거울처럼 보이도록) + 손 스켈레톤
+    // 좌우 반전된 이미지(거울처럼 보이도록) + 손 스켈레톤 (투명도 0%)
     push();
     translate(camX + camWidth, camY);
     scale(-1, 1);
+    tint(255, 255, 255, 0); // 이미지 투명도 0%
     image(video, 0, 0, camWidth, camHeight);
+    noTint();
 
     if (currentHandData && currentHandData.keypoints) {
       const scaleX = camWidth / video.width;
       const scaleY = camHeight / video.height;
 
-      // 관절 점들 (좌우 반전: scale(-1,1) 변환을 고려하여 X 좌표 반전)
+      // 관절 점들 (좌우 반전: scale(-1,1) 변환을 고려하여 X 좌표 반전) - 투명도 0%
       noStroke();
       for (let i = 0; i < currentHandData.keypoints.length; i++) {
         const kp = currentHandData.keypoints[i];
@@ -1488,20 +1605,20 @@ function drawHandDebug() {
         const y = kp.y * scaleY;
 
         if (i === 0) {
-          fill(255, 60, 60); // 손목(또는 기준점)
-          stroke(255);
+          fill(255, 60, 60, 0); // 손목(또는 기준점) - 투명도 0%
+          stroke(255, 0);
           strokeWeight(2);
           circle(x, y, 8);
         } else {
-          fill(80, 190, 255);
-          stroke(255);
+          fill(80, 190, 255, 0);
+          stroke(255, 0);
           strokeWeight(1);
           circle(x, y, 5);
         }
       }
 
-      // 뼈대 선 연결 (좌우 반전 적용)
-      stroke(0, 255, 140, 170);
+      // 뼈대 선 연결 (좌우 반전 적용) - 투명도 0%
+      stroke(0, 255, 140, 0);
       strokeWeight(1);
       noFill();
       const connections = [
@@ -1794,6 +1911,267 @@ function getJellyfishPixels(cx, cy, radius, tentacleCount, tentacleLength) {
   return pixels;
 }
 
+// 수첩 화면 그리기
+function drawNoteBook() {
+  push();
+  noSmooth();
+  
+  // 어두운 배경 오버레이
+  fill(0, 0, 0, 220);
+  noStroke();
+  rect(0, 0, width, height);
+  
+  // 수첩 패널 크기 및 위치
+  const notebookW = min(width - 60, 500);
+  const notebookH = min(height - 80, 600);
+  const notebookX = (width - notebookW) / 2;
+  const notebookY = (height - notebookH) / 2;
+  
+  // 수첩 배경 (노트북 느낌)
+  fill(240, 235, 220, 255); // 베이지색 노트북 색상
+  stroke(180, 170, 150, 255);
+  strokeWeight(3);
+  rect(notebookX, notebookY, notebookW, notebookH, 8);
+  
+  // 왼쪽 나선 바인더 (노트북 느낌)
+  const binderW = 25;
+  fill(200, 195, 180, 255);
+  stroke(150, 140, 130, 255);
+  strokeWeight(2);
+  rect(notebookX, notebookY, binderW, notebookH, 8, 0, 0, 8);
+  
+  // 나선 구멍들
+  const holeCount = 8;
+  const holeSpacing = notebookH / (holeCount + 1);
+  noStroke();
+  fill(180, 175, 165, 255);
+  for (let i = 1; i <= holeCount; i++) {
+    const holeY = notebookY + holeSpacing * i;
+    circle(notebookX + binderW / 2, holeY, 6);
+  }
+  
+  // 페이지 내용 영역
+  const contentX = notebookX + binderW + 20;
+  const contentY = notebookY + 50; // 위쪽 여백 증가 (30 -> 50)
+  const contentW = notebookW - binderW - 40;
+  const contentH = notebookH - 120; // 높이도 조정하여 전체적으로 균형 맞춤 (100 -> 120)
+  
+  // 페이지 배경
+  fill(255, 255, 250, 255);
+  stroke(200, 195, 180, 200);
+  strokeWeight(1);
+  rect(contentX, contentY, contentW, contentH, 4);
+  
+  // 페이지 내용
+  textFont(uiFont || 'ThinDungGeunMo');
+  textAlign(LEFT, BASELINE); // 베이스라인 정렬로 변경하여 줄에 맞춤
+  fill(30, 30, 30, 255);
+  textSize(16);
+  
+  const pageTitleY = contentY + 30; // 제목 위치 여유 증가 (20 -> 30)
+  const pageContentY = contentY + 70; // 본문 시작 위치도 조정 (50 -> 70)
+  const lineHeight = 24; // 줄 간격선과 맞추기 위해 24로 변경
+  const textOffset = -5; // 텍스트를 2픽셀 위로 올리기 위한 오프셋
+  
+  // 줄 간격선 (노트북 느낌) - 텍스트 시작 위치에 맞춤
+  stroke(220, 215, 200, 150);
+  strokeWeight(1);
+  const lineSpacing = lineHeight; // 텍스트 줄 간격과 동일하게
+  // 첫 번째 줄은 pageContentY 위치에 맞춤
+  for (let y = pageContentY; y < contentY + contentH - 20; y += lineSpacing) {
+    line(contentX + 15, y, contentX + contentW - 15, y);
+  }
+  
+  if (noteBookPage === 0) {
+    // 1페이지: 탐사 일지 소개
+    fill(50, 80, 120, 255);
+    textSize(20);
+    text("나의 탐사 일지", contentX + 20, pageTitleY);
+    
+    fill(30, 30, 30, 255);
+    textSize(14);
+    let y = pageContentY + textOffset;
+    text("디지털 오션에서 만난", contentX + 20, y);
+    y += lineHeight;
+    text("다양한 생명체들을 기록했습니다.", contentX + 20, y);
+    y += lineHeight * 2;
+    text("- 채팅 해파리: 채팅 기록", contentX + 20, y);
+    y += lineHeight;
+    text("- 배달 해마: 배달 기록", contentX + 20, y);
+    y += lineHeight;
+    text("- 숏폼 고래: 숏폼 기록", contentX + 20, y);
+    y += lineHeight;
+    text("- 쇼핑 물고기: 쇼핑 기록", contentX + 20, y);
+    y += lineHeight;
+    text("- 웹소설 미니 물고기: 웹소설 기록", contentX + 20, y);
+    y += lineHeight * 2;
+    text("이 일지를 통해 당신의", contentX + 20, y);
+    y += lineHeight;
+    text("디지털 여정을 되돌아보세요.", contentX + 20, y);
+  } else if (noteBookPage === 1) {
+    // 2페이지: 탐사 통계
+    fill(50, 80, 120, 255);
+    textSize(20);
+    text("탐사 통계", contentX + 20, pageTitleY);
+    
+    fill(30, 30, 30, 255);
+    textSize(14);
+    let y = pageContentY + textOffset;
+    text("만난 생명체 수:", contentX + 20, y);
+    y += lineHeight;
+    
+    // 실제로 만난 생명체 수 계산
+    let metCount = 0;
+    for (let i = 0; i < jellyfishes.length; i++) {
+      if (jellyfishes[i].dismissed) metCount++;
+    }
+    for (let i = 0; i < seahorses.length; i++) {
+      if (seahorses[i].dismissed) metCount++;
+    }
+    for (let i = 0; i < whales.length; i++) {
+      if (whales[i].dismissed) metCount++;
+    }
+    for (let i = 0; i < fishes.length; i++) {
+      if (fishes[i].dismissed) metCount++;
+    }
+    for (let i = 0; i < minifishes.length; i++) {
+      if (minifishes[i].dismissed) metCount++;
+    }
+    
+    text(`총 ${metCount}마리`, contentX + 40, y);
+    y += lineHeight * 2;
+    text("수집한 기록:", contentX + 20, y);
+    y += lineHeight;
+    text("- 채팅 해파리: " + jellyfishes.filter(j => j.dismissed).length + "개", contentX + 40, y);
+    y += lineHeight;
+    text("- 배달 해마: " + seahorses.filter(s => s.dismissed).length + "개", contentX + 40, y);
+    y += lineHeight;
+    text("- 숏폼 고래: " + whales.filter(w => w.dismissed).length + "개", contentX + 40, y);
+    y += lineHeight;
+    text("- 쇼핑 물고기: " + fishes.filter(f => f.dismissed).length + "개", contentX + 40, y);
+    y += lineHeight;
+    text("- 웹소설 미니 물고기: " + minifishes.filter(m => m.dismissed).length + "개", contentX + 40, y);
+    y += lineHeight * 2;
+    
+    // 탐사 시간 계산
+    const elapsedTime = millis() - explorationStartTime;
+    const elapsedSeconds = int(elapsedTime / 1000);
+    const minutes = int(elapsedSeconds / 60);
+    const seconds = elapsedSeconds % 60;
+    text("탐사 시간:", contentX + 20, y);
+    y += lineHeight;
+    if (minutes > 0) {
+      text(`${minutes}분 ${seconds}초`, contentX + 40, y);
+    } else {
+      text(`${seconds}초`, contentX + 40, y);
+    }
+    y += lineHeight * 2;
+    
+    // 이동 거리 표시 (월드 좌표 기준, 픽셀 단위)
+    const distanceInPixels = int(totalDistanceTraveled);
+    text("이동 거리:", contentX + 20, y);
+    y += lineHeight;
+    text(`${distanceInPixels.toLocaleString()}픽셀`, contentX + 40, y);
+  } else if (noteBookPage === 2) {
+    // 3페이지: 마무리
+    fill(50, 80, 120, 255);
+    textSize(20);
+    text("탐사 완료", contentX + 20, pageTitleY);
+    
+    fill(30, 30, 30, 255);
+    textSize(14);
+    let y = pageContentY + textOffset;
+    text("디지털 오션의 탐사가", contentX + 20, y);
+    y += lineHeight;
+    text("완료되었습니다.", contentX + 20, y);
+    y += lineHeight * 2;
+    text("이 일지는 당신의", contentX + 20, y);
+    y += lineHeight;
+    text("디지털 여정의 기록입니다.", contentX + 20, y);
+    y += lineHeight * 2;
+    text("언제든지 다시 돌아와서", contentX + 20, y);
+    y += lineHeight;
+    text("새로운 탐사를 시작할 수 있습니다.", contentX + 20, y);
+  }
+  
+  // 페이지 번호 표시
+  fill(150, 150, 150, 200);
+  textSize(12);
+  textAlign(CENTER, BOTTOM);
+  text(`${noteBookPage + 1} / 3`, notebookX + notebookW / 2, notebookY + notebookH - 15);
+  
+  // 이전/다음/리셋 버튼
+  const btnW = 80;
+  const btnH = 35;
+  const btnY = notebookY + notebookH - 60;
+  
+  // 이전 버튼 (20픽셀 오른쪽으로 이동)
+  if (noteBookPage > 0) {
+    const prevBtnX = notebookX + 53; // 40 -> 50 (10픽셀 더 오른쪽)
+    const isPrevHover = mouseX >= prevBtnX && mouseX <= prevBtnX + btnW &&
+                        mouseY >= btnY && mouseY <= btnY + btnH;
+    // 레몬색 배경
+    fill(isPrevHover ? 255 : 255, isPrevHover ? 250 : 247, isPrevHover ? 50 : 0, 240);
+    stroke(255, 247, 0, 255);
+    strokeWeight(2);
+    rect(prevBtnX, btnY, btnW, btnH, 6);
+    // 차콜색 글자
+    fill(54, 69, 79);
+    textSize(12);
+    textAlign(CENTER, CENTER);
+    text("이전", prevBtnX + btnW / 2, btnY + btnH / 2);
+  }
+  
+  // 다음 버튼 (1, 2페이지에서만 표시)
+  if (noteBookPage < 2) {
+    const nextBtnX = notebookX + notebookW - btnW - 30;
+    const isNextHover = mouseX >= nextBtnX && mouseX <= nextBtnX + btnW &&
+                        mouseY >= btnY && mouseY <= btnY + btnH;
+    // 레몬색 배경
+    fill(isNextHover ? 255 : 255, isNextHover ? 250 : 247, isNextHover ? 50 : 0, 240);
+    stroke(255, 247, 0, 255);
+    strokeWeight(2);
+    rect(nextBtnX, btnY, btnW, btnH, 6);
+    // 차콜색 글자
+    fill(54, 69, 79);
+    textSize(12);
+    textAlign(CENTER, CENTER);
+    text("다음", nextBtnX + btnW / 2, btnY + btnH / 2);
+  }
+  
+  // 리셋 버튼 (3페이지에서만 표시)
+  if (noteBookPage === 2) {
+    const resetBtnX = notebookX + notebookW - btnW - 30;
+    const isResetHover = mouseX >= resetBtnX && mouseX <= resetBtnX + btnW &&
+                          mouseY >= btnY && mouseY <= btnY + btnH;
+    fill(isResetHover ? 0 : 0, isResetHover ? 220 : 208, 255, 240);
+    stroke(0, 208, 255, 255);
+    strokeWeight(2);
+    rect(resetBtnX, btnY, btnW, btnH, 6);
+    fill(255);
+    textSize(12);
+    textAlign(CENTER, CENTER);
+    text("리셋", resetBtnX + btnW / 2, btnY + btnH / 2);
+  }
+  
+  // 닫기 버튼 (우상단)
+  const closeBtnSize = 30;
+  const closeBtnX = notebookX + notebookW - closeBtnSize - 10;
+  const closeBtnY = notebookY + 10;
+  const isCloseHover = mouseX >= closeBtnX && mouseX <= closeBtnX + closeBtnSize &&
+                       mouseY >= closeBtnY && mouseY <= closeBtnY + closeBtnSize;
+  fill(isCloseHover ? 200 : 150, 80, 80, 240);
+  stroke(220, 120, 120, 255);
+  strokeWeight(2);
+  rect(closeBtnX, closeBtnY, closeBtnSize, closeBtnSize, 4);
+  fill(255);
+  textSize(18);
+  textAlign(CENTER, CENTER);
+  text("×", closeBtnX + closeBtnSize / 2, closeBtnY + closeBtnSize / 2);
+  
+  pop();
+}
+
 // 상호작용 모달 그리기
 function drawInteractionModal(message) {
   const modalW = 300;
@@ -1822,8 +2200,8 @@ function drawInteractionModal(message) {
   const btn2X = modalX + modalW / 2 + 10;
   
   const btn1Text = isNoteConfirm ? "예" : "자세히 보기";
-  fill(60, 120, 180, UI_MODAL_BG_ALPHA);
-  stroke(100, 150, 200);
+  fill(0, 208, 255, UI_MODAL_BG_ALPHA);
+  stroke(0, 208, 255);
   rect(btn1X, btnY, btnW, btnH, UI_MODAL_RADIUS);
   fill(255);
   textSize(12);
@@ -1927,6 +2305,36 @@ function keyPressed() {
 }
 
 // 마우스 드래그 처리
+function mouseWheel(event) {
+  // 해양 분위기 선택 오버레이가 열려 있을 때만 스크롤 처리
+  if (showOceanThemeOverlay) {
+    const panelW = min(width - 80, 420);
+    const panelH = min(height - 120, 360);
+    const panelX = (width - panelW) / 2;
+    const panelY = (height - panelH) / 2;
+    const innerPadding = 22;
+    
+    // 패널 영역 내에서만 스크롤
+    if (mouseX >= panelX && mouseX <= panelX + panelW &&
+        mouseY >= panelY && mouseY <= panelY + panelH) {
+      const listAreaTop = panelY + innerPadding + 4 + 28 + 26;
+      const listAreaBottom = panelY + panelH - innerPadding;
+      const listAreaHeight = listAreaBottom - listAreaTop;
+      const chipH = 30;
+      const chipGapY = 8;
+      const totalListHeight = OCEAN_THEMES.length * (chipH + chipGapY) - chipGapY;
+      const maxScroll = max(0, totalListHeight - listAreaHeight);
+      
+      // 스크롤 오프셋 업데이트 (p5.js의 event.delta는 휠 방향)
+      oceanThemeScrollOffset -= event.delta * 0.5; // 스크롤 속도 조절
+      oceanThemeScrollOffset = constrain(oceanThemeScrollOffset, 0, maxScroll);
+      
+      return false; // 이벤트 전파 방지
+    }
+  }
+  return true; // 다른 경우는 기본 동작 허용
+}
+
 function mouseDragged() {
   if (isDraggingTextSize && (showChatDetail || showDeliveryDetail || showShortformDetail || showShoppingDetail || showNovelDetail)) {
     const controlX = width / 2;
@@ -1945,6 +2353,62 @@ function mouseReleased() {
 
 // 마우스 클릭 처리
 function mousePressed() {
+  // 수첩 화면 버튼 처리
+  if (showNoteBook) {
+    const notebookW = min(width - 60, 500);
+    const notebookH = min(height - 80, 600);
+    const notebookX = (width - notebookW) / 2;
+    const notebookY = (height - notebookH) / 2;
+    
+    const btnW = 80;
+    const btnH = 35;
+    const btnY = notebookY + notebookH - 60;
+    
+    // 이전 버튼 (20픽셀 오른쪽으로 이동된 위치)
+    if (noteBookPage > 0) {
+      const prevBtnX = notebookX + 50; // 40 -> 50 (10픽셀 더 오른쪽)
+      if (mouseX >= prevBtnX && mouseX <= prevBtnX + btnW &&
+          mouseY >= btnY && mouseY <= btnY + btnH) {
+        noteBookPage--;
+        return;
+      }
+    }
+    
+    // 다음 버튼 (1, 2페이지에서만 작동)
+    if (noteBookPage < 2) {
+      const nextBtnX = notebookX + notebookW - btnW - 30;
+      if (mouseX >= nextBtnX && mouseX <= nextBtnX + btnW &&
+          mouseY >= btnY && mouseY <= btnY + btnH) {
+        noteBookPage++;
+        return;
+      }
+    }
+    
+    // 리셋 버튼 (3페이지에서만 작동)
+    if (noteBookPage === 2) {
+      const resetBtnX = notebookX + notebookW - btnW - 30;
+      if (mouseX >= resetBtnX && mouseX <= resetBtnX + btnW &&
+          mouseY >= btnY && mouseY <= btnY + btnH) {
+        // 게임 재시작 (모든 상태 초기화)
+        location.reload();
+        return;
+      }
+    }
+    
+    // 닫기 버튼
+    const closeBtnSize = 30;
+    const closeBtnX = notebookX + notebookW - closeBtnSize - 10;
+    const closeBtnY = notebookY + 10;
+    if (mouseX >= closeBtnX && mouseX <= closeBtnX + closeBtnSize &&
+        mouseY >= closeBtnY && mouseY <= closeBtnY + closeBtnSize) {
+      showNoteBook = false;
+      return;
+    }
+    
+    // 수첩 화면이 열려있으면 다른 클릭 무시
+    return;
+  }
+  
   // 프롤로그 모달 처리
   if (showPrologue) {
     const modalW = 450;
@@ -1969,15 +2433,29 @@ function mousePressed() {
     return; // 프롤로그 중에는 다른 클릭 무시
   }
   
+  // 수첩(탐사 일지 버튼) 클릭 처리 - 가장 먼저 처리 (텍스트 동물 상세 모드에서도 작동)
+  {
+    const imgSize = 60 * 2.5;
+    const btnX = width - imgSize - 50;
+    const btnY = height - imgSize - 60;
+    const clickPadding = 20; // 클릭 범위 확장 (20픽셀 여유)
+    if (mouseX >= btnX - clickPadding && mouseX <= btnX + imgSize + clickPadding &&
+        mouseY >= btnY - clickPadding && mouseY <= btnY + imgSize + clickPadding) {
+      showNoteConfirm = true;
+      return;
+    }
+  }
+
   // 텍스트 크기 조절 슬라이더 클릭/드래그 처리
   if (showChatDetail || showDeliveryDetail || showShortformDetail || showShoppingDetail || showNovelDetail) {
     const controlX = width / 2;
-    const controlY = 85; // drawTextSizeControl과 일치
+    // 닫기 버튼 바로 위에 위치 (닫기 버튼 높이 35, 간격 20)
+    const controlY = closeHintY > 0 ? closeHintY - 35 - 20 : 85; // closeHintY가 설정되지 않았으면 기본값 사용
     const sliderW = 300;
     const sliderH = 8;
     const thumbSize = 24;
     const sliderX = controlX - sliderW / 2;
-    const sliderY = controlY + 3; // drawTextSizeControl과 일치
+    const sliderY = controlY; // drawTextSizeControl과 일치
     
     if (mouseX >= sliderX - thumbSize / 2 && mouseX <= sliderX + sliderW + thumbSize / 2 &&
         mouseY >= sliderY - thumbSize / 2 && mouseY <= sliderY + thumbSize / 2) {
@@ -1994,18 +2472,6 @@ function mousePressed() {
     return;
   }
 
-  // 수첩(탐사 일지 버튼) 클릭 처리
-  {
-    const imgSize = 60 * 2.5;
-    const btnX = width - imgSize - 50;
-    const btnY = height - imgSize - 60;
-    if (mouseX >= btnX && mouseX <= btnX + imgSize &&
-        mouseY >= btnY && mouseY <= btnY + imgSize) {
-      showNoteConfirm = true;
-      return;
-    }
-  }
-
   if (!currentModal) {
     // 현재 생물 상호작용 모달이 없고, 수첩 확인 모달도 아니면 더 할 일 없음
     if (!showNoteConfirm) return;
@@ -2015,7 +2481,7 @@ function mousePressed() {
   const modalH = 120;
   const modalX = (width - modalW) / 2;
   const modalY = height * 0.3;
-  
+
   // 생물 상세 모달 닫기 버튼 처리
   if (showChatDetail || showDeliveryDetail || showShortformDetail || showShoppingDetail || showNovelDetail) {
     const btnW = 140;
@@ -2076,6 +2542,8 @@ function mousePressed() {
 
       if (isYes) {
         showNoteConfirm = false;
+        showNoteBook = true;
+        noteBookPage = 0;
         return;
       } else if (isMoreExplore) {
         showNoteConfirm = false;
