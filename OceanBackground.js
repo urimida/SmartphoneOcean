@@ -26,23 +26,52 @@ class OceanBackground {
     const skyStartY = 0; // 배경은 항상 y=0부터 시작
     const skyEndY = surfY + extraSkyHeight; // 하늘 부분 확장
 
-    // 바다 색상 톤을 기반으로 하늘 색상 조정
-    // 하늘도 바다와 같은 색상 계열로 통일하여 자연스러운 전환
-    const skyTopDeep = pg.color(
-      topColorArray[0] * 0.15,  // 진한 파랑 (바다 톤 기반)
-      topColorArray[1] * 0.35,
-      topColorArray[2] * 0.55
-    );
-    const skyMid = pg.color(
-      topColorArray[0] * 0.25,   // 중간 파랑 (바다 톤 기반)
-      topColorArray[1] * 0.50,
-      topColorArray[2] * 0.70
-    );
-    const skyLow = pg.color(
-      topColorArray[0] * 0.60,   // 밝은 파랑 (바다 시작 색상과 자연스럽게 연결)
-      topColorArray[1] * 0.80,
-      topColorArray[2] * 0.95
-    );
+    // 바다 색상 톤 + 현재 테마에 따라 하늘 색상 조정
+    // 기본값: 바다 톤과 비슷한 푸른 하늘
+    let skyTopDeep, skyMid, skyLow;
+
+    // 현재 선택된 테마 이름 확인 (있다면)
+    let themeName = null;
+    if (typeof currentOceanThemeIndex === 'number' &&
+        currentOceanThemeIndex >= 0 &&
+        typeof OCEAN_THEMES !== 'undefined' &&
+        currentOceanThemeIndex < OCEAN_THEMES.length) {
+      themeName = OCEAN_THEMES[currentOceanThemeIndex].name;
+    }
+
+    if (themeName === 'Sunset Ocean') {
+      // 따뜻한 선셋 하늘 (보라 → 코랄 → 오렌지)
+      skyTopDeep = pg.color(40, 15, 60);     // 위: 딥 퍼플
+      skyMid     = pg.color(120, 60, 130);   // 중간: 보라-코랄
+      skyLow     = pg.color(255, 170, 120);  // 수면 근처: 선셋 오렌지
+    } else if (themeName === 'Golden Ocean') {
+      // 황금빛 일몰 하늘 (보라 → 골드 오렌지)
+      skyTopDeep = pg.color(35, 10, 40);     // 위: 짙은 보라
+      skyMid     = pg.color(150, 90, 80);    // 중간: 따뜻한 브라운-오렌지
+      skyLow     = pg.color(255, 210, 150);  // 수면 근처: 밝은 골드
+    } else if (themeName === 'Coral Reef') {
+      // 코랄 바다와 채도가 맞는 민트빛 하늘
+      skyTopDeep = pg.color(20, 60, 70);     // 위: 딥 틸
+      skyMid     = pg.color(70, 180, 180);   // 중간: 청록
+      skyLow     = pg.color(180, 255, 230);  // 수면 근처: 밝은 민트
+    } else {
+      // 디폴트: 바다 topColor를 기반으로 한 푸른 하늘
+      skyTopDeep = pg.color(
+        topColorArray[0] * 0.15,
+        topColorArray[1] * 0.35,
+        topColorArray[2] * 0.55
+      );
+      skyMid = pg.color(
+        topColorArray[0] * 0.25,
+        topColorArray[1] * 0.50,
+        topColorArray[2] * 0.70
+      );
+      skyLow = pg.color(
+        topColorArray[0] * 0.60,
+        topColorArray[1] * 0.80,
+        topColorArray[2] * 0.95
+      );
+    }
 
     for (let y = skyStartY; y < skyEndY; y++) {
       // 하늘 그라디언트를 확장된 높이에 맞게 조정
@@ -97,22 +126,32 @@ class OceanBackground {
     const skyBottomColor = skyLow; // 하늘의 마지막 색상
     for (let y = surfY; y < pg.height; y++) {
       let t = (y - surfY) / (pg.height - surfY);
-      let c;
-      
+      t = constrain(t, 0, 1);
+
       // 수면 바로 아래는 하늘 색상과 자연스럽게 연결
-      if (t < 0.05) {
-        c = pg.lerpColor(skyBottomColor, waterTop, t / 0.05);
-      } else if (t < 0.4) {
-        c = pg.lerpColor(waterTop, waterMid, (t - 0.05) / 0.35);
+      let c;
+      if (t < 0.06) {
+        const tt = t / 0.06;
+        c = pg.lerpColor(skyBottomColor, waterTop, tt);
       } else {
-        c = pg.lerpColor(waterMid, waterBottom, (t - 0.4) / 0.6);
+        // 매끄러운 단일 그라디언트 (중간에 경계가 보이지 않도록)
+        const depth = (t - 0.06) / 0.94;
+        const s = depth * depth * (3 - 2 * depth); // smoothstep
+        // waterTop → waterMid → waterBottom을 자연스럽게 이어줌
+        if (s < 0.5) {
+          const tt = s * 2.0;
+          c = pg.lerpColor(waterTop, waterMid, tt);
+        } else {
+          const tt = (s - 0.5) * 2.0;
+          c = pg.lerpColor(waterMid, waterBottom, tt);
+        }
       }
 
       // 수면 근처 노란빛
-      if (t < 0.2) {
-        let yellowAmount = (0.2 - t) / 0.2;
-        let yellowTint = pg.color(255, 240, 180, yellowAmount * 40);
-        c = pg.lerpColor(c, yellowTint, yellowAmount * 0.3);
+      if (t < 0.18) {
+        let yellowAmount = (0.18 - t) / 0.18;
+        let yellowTint = pg.color(255, 240, 180, yellowAmount * 35);
+        c = pg.lerpColor(c, yellowTint, yellowAmount * 0.25);
       }
 
       pg.stroke(c);
@@ -145,7 +184,7 @@ class OceanBackground {
     }
 
     // 4) 빛줄기 효과 (가장 뒤 레이어로 먼저 그림)
-    this.drawLightShafts(pg);
+    // this.drawLightShafts(pg); // 빛줄기 효과 비활성화
 
     // 5) 바닥 돌/흙 패턴
     this.drawFloorStones(pg, bottomColorArray);

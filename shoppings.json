@@ -1,0 +1,93 @@
+[
+  {
+    "storeName": "쿠팡",
+    "productName": "무선 이어폰",
+    "price": 89000,
+    "cartCount": 3,
+    "wishlistCount": 12,
+    "searchTime": 45,
+    "category": "전자제품"
+  },
+  {
+    "storeName": "11번가",
+    "productName": "스마트워치",
+    "price": 159000,
+    "cartCount": 1,
+    "wishlistCount": 8,
+    "searchTime": 30,
+    "category": "전자제품"
+  },
+  {
+    "storeName": "옥션",
+    "productName": "노트북 가방",
+    "price": 35000,
+    "cartCount": 2,
+    "wishlistCount": 5,
+    "searchTime": 15,
+    "category": "가방"
+  },
+  {
+    "storeName": "G마켓",
+    "productName": "블루투스 스피커",
+    "price": 129000,
+    "cartCount": 4,
+    "wishlistCount": 15,
+    "searchTime": 60,
+    "category": "오디오"
+  },
+  {
+    "storeName": "인터파크",
+    "productName": "무선 마우스",
+    "price": 25000,
+    "cartCount": 1,
+    "wishlistCount": 3,
+    "searchTime": 20,
+    "category": "컴퓨터"
+  },
+  {
+    "storeName": "위메프",
+    "productName": "스마트폰 케이스",
+    "price": 15000,
+    "cartCount": 2,
+    "wishlistCount": 7,
+    "searchTime": 10,
+    "category": "액세서리"
+  },
+  {
+    "storeName": "티몬",
+    "productName": "노트북 스탠드",
+    "price": 45000,
+    "cartCount": 1,
+    "wishlistCount": 4,
+    "searchTime": 25,
+    "category": "가구"
+  },
+  {
+    "storeName": "쿠팡",
+    "productName": "무선 충전기",
+    "price": 32000,
+    "cartCount": 3,
+    "wishlistCount": 9,
+    "searchTime": 35,
+    "category": "전자제품"
+  },
+  {
+    "storeName": "11번가",
+    "productName": "USB-C 케이블",
+    "price": 12000,
+    "cartCount": 2,
+    "wishlistCount": 6,
+    "searchTime": 12,
+    "category": "케이블"
+  },
+  {
+    "storeName": "G마켓",
+    "productName": "키보드",
+    "price": 89000,
+    "cartCount": 1,
+    "wishlistCount": 11,
+    "searchTime": 50,
+    "category": "컴퓨터"
+  }
+]
+

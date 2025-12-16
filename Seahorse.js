@@ -35,8 +35,9 @@ class Seahorse {
     this.x = random(20, BASE_W - 20);
     // 확장된 배경 높이 기준 (BASE_H * 1.3)
     const totalBgHeight = BASE_H * 1.3;
-    this.y = random(totalBgHeight * 0.98, totalBgHeight * 0.99) - 10;
-    this.size = random(2, 4) * 1.3;
+    // 전체적으로 약간 위쪽으로 올리기 (0.94~0.97 구간)
+    this.y = random(totalBgHeight * 0.94, totalBgHeight * 0.97) - 10;
+    this.size = random(2, 4) * 1.3 * 1.5; // 해마 크기 1.5배 증가
     this.vx = random(-0.2, 0.2);
     this.bobOffset = random(TWO_PI);
     this.bobSpeed = random(0.02, 0.04);
@@ -76,8 +77,10 @@ class Seahorse {
 
     // 확장된 배경 높이 기준 (BASE_H * 1.3)
     const totalBgHeight = BASE_H * 1.3;
-    if (this.y < totalBgHeight * 0.98 - 10) this.y = totalBgHeight * 0.98 - 10;
-    if (this.y > totalBgHeight * 0.99 - 10) this.y = totalBgHeight * 0.99 - 10;
+    const minY = totalBgHeight * 0.94 - 10;
+    const maxY = totalBgHeight * 0.97 - 10;
+    if (this.y < minY) this.y = minY;
+    if (this.y > maxY) this.y = maxY;
     
     // 반짝임 효과 업데이트
     const t = millis() * 0.001 + this.timeOffset;
@@ -112,12 +115,29 @@ class Seahorse {
     }
 
     // ==========================
-    // 해마 이미지 그리기
+    // 해마 이미지 그리기 (각 개체마다 살짝 다른 색감)
     // ==========================
     pg.imageMode(CENTER);
-    const imgWidth = imgSeahorse.width * k * 0.006; // 이미지 크기 조정 (2배 확대)
-    const imgHeight = imgSeahorse.height * k * 0.006;
+    // 바다 테마에 맞는 생물 필터 적용
+    // 기본 바다 테마 색상
+    let tintRGB = null;
+    if (typeof getOceanLifeTintRGB === 'function') {
+      tintRGB = getOceanLifeTintRGB();
+    }
+    if (tintRGB) {
+      // 해마마다 살짝 다른 색감 (조금 더 주황/초록/파랑 쪽으로 흔들기)
+      const hueVariant = noise(this.timeOffset) * 1.0 - 0.5; // -0.5 ~ 0.5
+      const r = constrain(tintRGB.r + hueVariant * 40, 0, 255);
+      const g = constrain(tintRGB.g + hueVariant * -20, 0, 255);
+      const b = constrain(tintRGB.b + hueVariant * 30, 0, 255);
+      pg.tint(r, g, b, 235);
+    } else {
+      pg.noTint();
+    }
+    const imgWidth = imgSeahorse.width * k * 0.006 * 1.5; // 이미지 크기 조정 (1.5배 추가 확대)
+    const imgHeight = imgSeahorse.height * k * 0.006 * 1.5;
     pg.image(imgSeahorse, 0, 0, imgWidth, imgHeight);
+    pg.noTint();
 
     // ==========================
     // 반짝임 효과 (해파리처럼)
@@ -149,6 +169,10 @@ class Seahorse {
   // 글자로 만든 해마 그리기 (자세히 보기 모드)
   drawTextDetail() {
     if (!this.deliveryData) return { x: 0, y: 0 }; // 데이터 없으면 패스
+    if (!imgSeahorse || !imgSeahorse.width || imgSeahorse.width === 0) return { x: 0, y: 0 }; // 이미지 없으면 리턴
+
+    const cx = width / 2;
+    const cy = height / 2;
 
     // 1) 텍스트 소스 만들기
     let itemsText = this.deliveryData.orderItems.join("  •  ");
@@ -161,94 +185,156 @@ class Seahorse {
     content = content.toUpperCase();
 
     // 글자가 모자라지 않게 충분히 반복
-    while (content.length < 1000) {
+    while (content.length < 2000) {
       content += "   •   " + content;
     }
 
     let idx = 0; // content에서 꺼낼 문자 인덱스
 
     noStroke();
-    textFont("Pretendard");
+    textFont(uiFont || 'ThinDungGeunMo');
     textAlign(CENTER, CENTER);
 
-    // ─────────────────────────────
-    // 2) 해마 픽셀 마스크 기반으로 텍스트 찍기
-    // ─────────────────────────────
-    const maskRows = SEAHORSE_TEXT_MASK.length;
-    const maskCols = SEAHORSE_TEXT_MASK[0].length;
-    const cx = width / 2;
-    const totalHeight = height * 0.55;        // 전체 해마 높이
-    const cellSize = totalHeight / maskRows;  // 한 칸 크기
-    const totalWidth = maskCols * cellSize;
-    const startX = cx - totalWidth / 2;
-    const startY = height * 0.5 - totalHeight * 0.55; // 화면 중앙 기준 약간 위
-
-    // 시간 기반 움직임을 위한 변수
-    const baseTime = frameCount * 0.04; // 해파리보다 약간 느리게
+    // -------------------------
+    // 해마 이미지 실루엣 기반으로 텍스트 배치
+    // -------------------------
+    const seahorseDisplayWidth = min(width, height) * 0.6 * 1.5; // 화면에 표시할 해마 크기 (1.5배 확대)
+    const seahorseDisplayHeight = seahorseDisplayWidth * (imgSeahorse.height / imgSeahorse.width); // 비율 유지
     
-    for (let r = 0; r < maskRows; r++) {
-      const row = SEAHORSE_TEXT_MASK[r];
-      const tRow = r / max(1, maskRows - 1); // 위→아래 그라디언트
+    // 그리드 크기 (이미지를 샘플링할 간격)
+    const gridSize = 12; // 픽셀 단위 그리드 크기
+    const scaleX = seahorseDisplayWidth / imgSeahorse.width;
+    const scaleY = seahorseDisplayHeight / imgSeahorse.height;
+    
+    // 이미지를 그리드로 샘플링하여 실루엣 위치 찾기
+    const headOffsetY = -40; // 화면 중앙 기준 위로 올리기
+    const startX = cx - seahorseDisplayWidth / 2;
+    const startY = cy + headOffsetY - seahorseDisplayHeight / 2;
+    
+    // 시간 기반 움직임
+    const baseTime = frameCount * 0.04;
+    
+    // -------------------------
+    // 픽셀 위치 캐싱 (성능 최적화)
+    // -------------------------
+    if (!this._textPixelPositions) {
+      imgSeahorse.loadPixels();
+      const seahorsePixels = imgSeahorse.pixels;
 
-      // 위쪽(머리) 밝고 아래쪽(꼬리) 어둡게
-      const col = lerpColor(
-        color(150, 220, 255, 250),
-        color(20, 80, 150, 200),
-        tRow
-      );
-
-      for (let c = 0; c < maskCols; c++) {
-        if (row[c] !== "X") continue; // 빈칸은 스킵
-
-        // 공백/줄바꿈이면 다음 문자로 스킵
-        let ch = content[idx++ % content.length];
-        while ((ch === " " || ch === "\n") && content.length > 0) {
-          ch = content[idx++ % content.length];
+      const pixelPositions = [];
+      for (let gridY = 0; gridY < imgSeahorse.height; gridY += gridSize) {
+        for (let gridX = 0; gridX < imgSeahorse.width; gridX += gridSize) {
+          // 그리드 셀 중심점의 픽셀 확인
+          const pixelX = constrain(gridX + gridSize / 2, 0, imgSeahorse.width - 1);
+          const pixelY = constrain(gridY + gridSize / 2, 0, imgSeahorse.height - 1);
+          
+          // 픽셀 인덱스 계산
+          const pixelIdx = (pixelY * imgSeahorse.width + pixelX) * 4;
+          
+          // 알파값 확인 (실루엣 부분인지 체크)
+          const alpha = seahorsePixels[pixelIdx + 3];
+          if (alpha < 50) continue; // 투명한 부분은 스킵
+          
+          // 화면 좌표로 변환
+          const x = startX + pixelX * scaleX;
+          const y = startY + pixelY * scaleY;
+          
+          // 텍스트가 이미지 영역을 벗어나지 않도록 체크
+          if (x < startX || x > startX + seahorseDisplayWidth || 
+              y < startY || y > startY + seahorseDisplayHeight) continue;
+          
+          // 해마 이미지의 실제 픽셀 색상 사용
+          const r = seahorsePixels[pixelIdx];
+          const g = seahorsePixels[pixelIdx + 1];
+          const b = seahorsePixels[pixelIdx + 2];
+          
+          // 위치와 색상 정보 저장
+          pixelPositions.push({
+            pixelX: pixelX,
+            pixelY: pixelY,
+            x: x,
+            y: y,
+            r: r,
+            g: g,
+            b: b,
+            pixelIdx: pixelIdx
+          });
         }
-
-        // 기본 위치
-        const baseX = startX + c * cellSize + cellSize / 2;
-        const baseY = startY + r * cellSize + cellSize / 2;
-        
-        // 해마의 위치에 따른 움직임 패턴
-        // 머리 부분(위쪽)은 더 많이 움직이고, 꼬리 부분(아래쪽)은 덜 움직임
-        const headFactor = 1.0 - tRow; // 머리일수록 1에 가까움
-        const tailFactor = tRow; // 꼬리일수록 1에 가까움
-        
-        // 수평 움직임 (좌우로 흔들림)
-        const waveX1 = sin(baseTime + c * 0.2 + r * 0.15) * (2 + headFactor * 3);
-        const waveX2 = cos(baseTime * 0.7 + c * 0.15) * (1 + headFactor * 2);
-        const waveX = waveX1 + waveX2 * 0.5;
-        
-        // 수직 움직임 (위아래로 흔들림, 머리 부분이 더 많이)
-        const waveY1 = sin(baseTime * 0.8 + r * 0.3) * (1.5 + headFactor * 2);
-        const waveY2 = cos(baseTime * 0.6 + c * 0.2) * (0.8 + headFactor * 1.5);
-        const waveY = waveY1 + waveY2 * 0.4;
-        
-        // 꼬리 부분은 spiral처럼 회전하는 움직임 추가
-        const spiralWave = tailFactor > 0.6 ? sin(baseTime * 0.5 + r * 0.4 + c * 0.3) * tailFactor * 2 : 0;
-        
-        const x = baseX + waveX + spiralWave;
-        const y = baseY + waveY;
-        const size = cellSize * 0.85;
-
-        textSize(size);
-        fill(col);
-
-        push();
-        translate(x, y);
-        // 움직임에 따라 자연스럽게 회전 (해파리처럼)
-        const rotation = (waveX + waveY) * 0.05 + spiralWave * 0.1;
-        rotate(rotation);
-        text(ch, 0, 0);
-        pop();
       }
+
+      // 행별로 정렬 (y 좌표 먼저, 그 다음 x 좌표)
+      pixelPositions.sort((a, b) => {
+        // 먼저 y 좌표로 정렬 (위에서 아래로)
+        if (Math.abs(a.y - b.y) > gridSize) {
+          return a.y - b.y;
+        }
+        // 같은 행 내에서는 x 좌표로 정렬 (왼쪽에서 오른쪽으로)
+        return a.x - b.x;
+      });
+
+      this._textPixelPositions = pixelPositions;
+    }
+
+    const pixelPositions = this._textPixelPositions;
+    
+    // 정렬된 순서대로 텍스트 배치
+    for (let i = 0; i < pixelPositions.length; i++) {
+      const pos = pixelPositions[i];
+      
+      const ch = content[idx++ % content.length];
+      if (ch === ' ' || ch === '\n') {
+        idx++; // 공백이면 다음 문자로
+        continue;
+      }
+      
+      // 해마 이미지 색상을 바다 테마에 맞게 살짝 조정
+      const tRow = (pos.pixelY / imgSeahorse.height);
+      const oceanTint = lerpColor(
+        color(150, 220, 255), // 밝은 바다색
+        color(20, 80, 150),   // 어두운 바다색
+        tRow * 0.3 // 약간만 섞기
+      );
+      
+      // 원본 색상과 바다 테마 색상을 혼합 (7:3 비율)
+      const col = lerpColor(
+        color(pos.r, pos.g, pos.b, 250),
+        oceanTint,
+        0.3
+      );
+      
+      // 움직임 효과 (해마가 살아있는 느낌, 최소화하여 가독성 향상)
+      const headFactor = 1.0 - tRow;
+      const tailFactor = tRow;
+      const waveX = sin(baseTime + pos.pixelY * 0.02) * (1 + headFactor * 1.5);
+      const waveY = cos(baseTime * 0.8 + pos.pixelX * 0.015) * (0.8 + headFactor * 1);
+      const spiralWave = tailFactor > 0.6 ? sin(baseTime * 0.5 + pos.pixelY * 0.04) * tailFactor * 1.5 : 0;
+      
+      const finalX = pos.x + waveX + spiralWave;
+      const finalY = pos.y + waveY;
+      
+      // 텍스트 크기
+      let size = 10 + tRow * 4; // 최대 14까지
+      // 전역 텍스트 크기 스케일 적용
+      if (typeof textDetailSizeScale !== 'undefined') {
+        size *= textDetailSizeScale;
+      }
+      
+      textSize(size);
+      fill(col);
+      
+      push();
+      translate(finalX, finalY);
+      // 자연스러운 회전 (최소화)
+      const rotation = (waveX + waveY) * 0.03 + spiralWave * 0.05;
+      rotate(rotation);
+      text(ch, 0, 0);
+      pop();
     }
 
     // ─────────────────────────────
     // 3) 닫기 버튼 (해마 아래)
     // ─────────────────────────────
-    const btnY = startY + totalHeight + 50;
+    const btnY = cy + headOffsetY + seahorseDisplayHeight / 2 + 80;
     const btnW = 140;
     const btnH = 35;
     const btnX = cx - btnW / 2;
@@ -256,7 +342,7 @@ class Seahorse {
     fill(60, 120, 180, 240);
     stroke(100, 150, 200);
     strokeWeight(2);
-    rect(btnX, btnY - btnH / 2, btnW, btnH);
+    rect(btnX, btnY - btnH / 2, btnW, btnH, 10); // UI_MODAL_RADIUS와 동일
 
     fill(255);
     textSize(14);

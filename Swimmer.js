@@ -7,7 +7,7 @@ class Swimmer {
     this.y = BASE_H * 0.45;
     this.vx = 0;
     this.vy = 0;
-    this.speed = 0.15;
+    this.speed = 0.08; // 전체 이동 속도 0.8배
     this.friction = 0.9;
 
     this.facingLeft = false;
@@ -26,58 +26,17 @@ class Swimmer {
     if (keyIsDown(UP_ARROW)) this.vy -= this.speed;
     if (keyIsDown(DOWN_ARROW)) this.vy += this.speed;
     
-    // 손 인식으로 움직이기 (키보드 입력이 없을 때만)
+    // 손 인식으로 움직이기 (키보드 입력이 없을 때만, 조이스틱 벡터 사용)
     const hasKeyboardInput = keyIsDown(LEFT_ARROW) || keyIsDown(RIGHT_ARROW) || 
                               keyIsDown(UP_ARROW) || keyIsDown(DOWN_ARROW);
     
     if (!hasKeyboardInput && typeof handControlEnabled !== 'undefined' && handControlEnabled) {
-      // 손이 최근 1초 이내에 감지되었는지 확인
       const handDetectedRecently = (millis() - lastHandTime) < 1000;
-      
-      if (handDetectedRecently && typeof currentHandData !== 'undefined' && currentHandData && currentHandData.keypoints) {
-        // 손 마디 데이터 가져오기 (손목 제외, 1~20번 마디 사용)
-        const keypoints = currentHandData.keypoints;
-        if (keypoints.length > 1) {
-          // 각 방향에 포함된 마디 개수 세기
-          let upCount = 0;
-          let downCount = 0;
-          let leftCount = 0;
-          let rightCount = 0;
-          
-          // 화면 영역 경계값 (33% 기준)
-          const topBound = 0.33;
-          const bottomBound = 0.67;
-          const leftBound = 0.33;
-          const rightBound = 0.67;
-          
-          // 손목(0번) 제외하고 모든 마디 확인
-          for (let i = 1; i < keypoints.length; i++) {
-            const kp = keypoints[i];
-            // 비디오 좌표를 화면 비율(0~1)로 변환 (좌우 반전 고려)
-            const kpX = 1.0 - (kp.x / video.width);
-            const kpY = kp.y / video.height;
-            
-            // 각 방향에 포함되는지 확인
-            if (kpY < topBound) upCount++;
-            if (kpY > bottomBound) downCount++;
-            if (kpX < leftBound) leftCount++;
-            if (kpX > rightBound) rightCount++;
-          }
-          
-          // 위/아래 중 더 많은 쪽으로 이동
-          if (upCount > downCount && upCount > 0) {
-            this.vy -= this.speed;
-          } else if (downCount > upCount && downCount > 0) {
-            this.vy += this.speed;
-          }
-          
-          // 좌/우 중 더 많은 쪽으로 이동 (스켈레톤 반대 방향)
-          if (leftCount > rightCount && leftCount > 0) {
-            this.vx += this.speed; // 손이 왼쪽에 있으면 오른쪽으로 이동
-          } else if (rightCount > leftCount && rightCount > 0) {
-            this.vx -= this.speed; // 손이 오른쪽에 있으면 왼쪽으로 이동
-          }
-        }
+      if (handDetectedRecently) {
+        const JOY_SPEED = 0.25; // 조이스틱 영향력
+        // 필요 시 방향 반전하려면 joyX/joyY에 -1을 곱해 튜닝
+        this.vx += joyX * JOY_SPEED;
+        this.vy += joyY * JOY_SPEED;
       }
     }
 
@@ -234,6 +193,69 @@ class Swimmer {
     
     // 이미지 모드 설정
     pg.imageMode(CENTER);
+
+    // -------- 후광(halo) 효과: 더 작고 동그란, 단계가 많은 그라데이션 --------
+    // 중심은 밝고, 짧은 거리 안에서 여러 단계로 투명해졌다가
+    // 가장 바깥쪽에만 아주 옅은 링(약 10% 밝기)이 남도록 구성
+    const haloBaseSize = 14 * 1.2; // 전체 크기 1.2배 확대
+    const haloPulse = 1 + sin(this.strokePhase * 0.6) * 0.12;
+    const haloSizeOuter = haloBaseSize * haloPulse * this.scaleFactor * 1.2;
+    const haloSizeInner = haloBaseSize * haloPulse * this.scaleFactor * 0.7;
+
+    pg.push();
+    pg.blendMode(pg.ADD);
+    pg.noStroke();
+
+    // 중심부(밝은 하얀빛) - 작고 비교적 투명, 완전한 원 형태
+    pg.fill(255, 255, 255, 130);
+    pg.ellipse(0, 0, haloSizeInner * 0.4, haloSizeInner * 0.4);
+
+    // 더 많은 단계의 그라데이션 레이어
+    const layerCount = 20; // 단계 수
+    for (let i = 0; i < layerCount; i++) {
+      const t = i / (layerCount - 1); // 0 ~ 1
+
+      // 반지름: 안쪽에서 바깥으로 점차 커짐 (정원 형태)
+      const r = lerp(haloSizeInner * 0.4, haloSizeOuter, t);
+
+      // 알파값 곡선 (전체적으로 더 투명하게 조정):
+      //  - 0 ~ 0.3: 110 → 15
+      //  - 0.3 ~ 0.7: 15 → 0
+      //  - 0.7 ~ 1.0: 0 → 18 (가장자리에서만 아주 옅게)
+      let alpha;
+      if (t < 0.3) {
+        alpha = lerp(110, 15, t / 0.3);
+      } else if (t < 0.7) {
+        alpha = lerp(15, 0, (t - 0.3) / 0.4);
+      } else {
+        alpha = lerp(0, 18, (t - 0.7) / 0.3);
+      }
+
+      if (alpha <= 0.5) continue; // 극도로 낮은 값은 스킵
+
+      // 색은 거의 흰색에 가깝게, 살짝만 노란 톤
+      const colR = 255;
+      const colG = lerp(255, 240, t);
+      const colB = lerp(255, 210, t);
+      pg.fill(colR, colG, colB, alpha);
+
+      // 완전한 원 (가로/세로 동일)
+      pg.ellipse(0, 0, r, r);
+    }
+
+    pg.blendMode(pg.BLEND);
+    pg.pop();
+
+    // 바다 테마에 맞는 생물 필터 적용 (살짝만 색을 섞어서 톤 맞추기)
+    let tintRGB = null;
+    if (typeof getOceanLifeTintRGB === 'function') {
+      tintRGB = getOceanLifeTintRGB();
+    }
+    if (tintRGB) {
+      pg.tint(tintRGB.r, tintRGB.g, tintRGB.b, 240);
+    } else {
+      pg.noTint();
+    }
     
     // 좌우 반전
     if (flipX) {
@@ -256,6 +278,9 @@ class Swimmer {
     // 이미지 그리기 (중앙 기준)
     pg.image(currentImg, 0, 0, imgWidth, imgHeight);
     
+    // 다음 그리기에는 영향이 없도록 틴트 해제
+    pg.noTint();
+
     pg.pop();
     pg.pop();
   }

@@ -1,0 +1,93 @@
+[
+  {
+    "title": "재벌가 막내아들",
+    "author": "작가A",
+    "genre": "판타지",
+    "viewCount": 1250000,
+    "likeCount": 45000,
+    "readTime": 120,
+    "platform": "카카오페이지"
+  },
+  {
+    "title": "전생했더니 슬라임이었던 건에 대하여",
+    "author": "작가B",
+    "genre": "판타지",
+    "viewCount": 890000,
+    "likeCount": 32000,
+    "readTime": 90,
+    "platform": "네이버웹소설"
+  },
+  {
+    "title": "나 혼자만 레벨업",
+    "author": "작가C",
+    "genre": "액션",
+    "viewCount": 2100000,
+    "likeCount": 78000,
+    "readTime": 150,
+    "platform": "카카오페이지"
+  },
+  {
+    "title": "신과함께",
+    "author": "작가D",
+    "genre": "판타지",
+    "viewCount": 560000,
+    "likeCount": 21000,
+    "readTime": 60,
+    "platform": "리디북스"
+  },
+  {
+    "title": "오늘도 사랑스럽개",
+    "author": "작가E",
+    "genre": "로맨스",
+    "viewCount": 340000,
+    "likeCount": 15000,
+    "readTime": 45,
+    "platform": "조아라"
+  },
+  {
+    "title": "던전에서 만남을 추구하면 안 되는 걸까",
+    "author": "작가F",
+    "genre": "판타지",
+    "viewCount": 980000,
+    "likeCount": 36000,
+    "readTime": 110,
+    "platform": "네이버웹소설"
+  },
+  {
+    "title": "이세계 치트 마법사",
+    "author": "작가G",
+    "genre": "판타지",
+    "viewCount": 720000,
+    "likeCount": 28000,
+    "readTime": 85,
+    "platform": "카카오페이지"
+  },
+  {
+    "title": "용사가 마왕을 무찌르고",
+    "author": "작가H",
+    "genre": "판타지",
+    "viewCount": 450000,
+    "likeCount": 18000,
+    "readTime": 55,
+    "platform": "리디북스"
+  },
+  {
+    "title": "회귀자의 마법공학",
+    "author": "작가I",
+    "genre": "판타지",
+    "viewCount": 1100000,
+    "likeCount": 42000,
+    "readTime": 130,
+    "platform": "카카오페이지"
+  },
+  {
+    "title": "마법사의 딸",
+    "author": "작가J",
+    "genre": "로맨스판타지",
+    "viewCount": 670000,
+    "likeCount": 25000,
+    "readTime": 75,
+    "platform": "네이버웹소설"
+  }
+]
+
