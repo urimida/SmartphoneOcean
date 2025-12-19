@@ -213,6 +213,24 @@ class Seahorse {
     const cx = width / 2;
     const cy = height / 2;
 
+    // -------------------------
+    // 해마 이미지 실루엣 기반으로 텍스트 배치
+    // -------------------------
+    const seahorseDisplayWidth = min(width, height) * 0.6 * 1.5; // 화면에 표시할 해마 크기 (1.5배 확대)
+    const seahorseDisplayHeight = seahorseDisplayWidth * (imgSeahorse.height / imgSeahorse.width); // 비율 유지
+    
+    // 그리드 크기 (이미지를 샘플링할 간격)
+    const gridSize = 12; // 픽셀 단위 그리드 크기
+    const scaleX = seahorseDisplayWidth / imgSeahorse.width;
+    const scaleY = seahorseDisplayHeight / imgSeahorse.height;
+    
+    // 이미지를 그리드로 샘플링하여 실루엣 위치 찾기
+    const headOffsetY = -40; // 화면 중앙 기준 위로 올리기
+    const startX = cx - seahorseDisplayWidth / 2;
+    const startY = cy + headOffsetY - seahorseDisplayHeight / 2;
+    
+    // 동물 이름 표시는 텍스트 실루엣을 그린 후에 표시 (다른 요소에 가려지지 않도록)
+
     // 1) 텍스트 소스 만들기
     let itemsText = this.deliveryData.orderItems.join("  •  ");
     let content = `${this.deliveryData.storeName}  •  ${itemsText}  •  ${this.deliveryData.totalPrice.toLocaleString()}원`;
@@ -233,38 +251,6 @@ class Seahorse {
     noStroke();
     textFont(uiFont || 'ThinDungGeunMo');
     textAlign(CENTER, CENTER);
-
-    // -------------------------
-    // 해마 이미지 실루엣 기반으로 텍스트 배치
-    // -------------------------
-    const seahorseDisplayWidth = min(width, height) * 0.6 * 1.5; // 화면에 표시할 해마 크기 (1.5배 확대)
-    const seahorseDisplayHeight = seahorseDisplayWidth * (imgSeahorse.height / imgSeahorse.width); // 비율 유지
-    
-    // 그리드 크기 (이미지를 샘플링할 간격)
-    const gridSize = 12; // 픽셀 단위 그리드 크기
-    const scaleX = seahorseDisplayWidth / imgSeahorse.width;
-    const scaleY = seahorseDisplayHeight / imgSeahorse.height;
-    
-    // 이미지를 그리드로 샘플링하여 실루엣 위치 찾기
-    const headOffsetY = -40; // 화면 중앙 기준 위로 올리기
-    const startX = cx - seahorseDisplayWidth / 2;
-    const startY = cy + headOffsetY - seahorseDisplayHeight / 2;
-    
-    // 동물 이름 표시 (텍스트 실루엣 위쪽) - 다른 동물들과 동일한 위치로 조정
-    const nameY = cy + headOffsetY - seahorseDisplayHeight / 2 - 50;
-    textFont(typeof titleFont !== 'undefined' && titleFont ? titleFont : (uiFont || 'ThinDungGeunMo'));
-    textAlign(CENTER, CENTER);
-    textSize(24);
-    fill(200, 220, 255, 255);
-    // 제목에 가게명 포함
-    let titleText = "배달 해마";
-    if (this.deliveryData && this.deliveryData.storeName) {
-      const storeName = this.deliveryData.storeName;
-      // 가게명이 길면 앞부분만 사용 (최대 12자)
-      const shortStoreName = storeName.length > 12 ? storeName.substring(0, 12) + "..." : storeName;
-      titleText = `배달 해마: ${shortStoreName}`;
-    }
-    text(titleText, cx, nameY);
     
     // 시간 기반 움직임
     const baseTime = frameCount * 0.04;
@@ -468,7 +454,29 @@ class Seahorse {
     }
 
     // ─────────────────────────────
-    // 3) 닫기 버튼 (해마 아래)
+    // 3) 동물 이름 표시 (텍스트 실루엣 위쪽) - 다른 동물들과 동일한 위치로 조정
+    // ─────────────────────────────
+    const nameY = startY - 40; // 다른 동물들과 동일하게 startY 기준으로 설정
+    push(); // 현재 스타일 저장
+    textFont(typeof titleFont !== 'undefined' && titleFont ? titleFont : (uiFont || 'ThinDungGeunMo'));
+    textAlign(CENTER, CENTER);
+    textSize(24);
+    fill(200, 220, 255, 255);
+    stroke(20, 40, 80, 200); // 외곽선 추가로 가독성 향상
+    strokeWeight(2);
+    // 제목에 가게명 포함
+    let titleText = "배달 해마";
+    if (this.deliveryData && this.deliveryData.storeName) {
+      const storeName = this.deliveryData.storeName;
+      // 가게명이 길면 앞부분만 사용 (최대 12자)
+      const shortStoreName = storeName.length > 12 ? storeName.substring(0, 12) + "..." : storeName;
+      titleText = `배달 해마: ${shortStoreName}`;
+    }
+    text(titleText, cx, nameY);
+    pop(); // 스타일 복원
+
+    // ─────────────────────────────
+    // 4) 닫기 버튼 (해마 아래)
     // ─────────────────────────────
     const btnY = cy + headOffsetY + seahorseDisplayHeight / 2 + 55;
     const btnW = 140;
