@@ -1,98 +1,386 @@
-[
-  {
-    "title": "재벌가 막내아들",
-    "author": "작가A",
-    "genre": "판타지",
-    "viewCount": 1250000,
-    "likeCount": 45000,
-    "readTime": 120,
-    "platform": "카카오페이지"
-  },
-  {
-    "title": "전생했더니 슬라임이었던 건에 대하여",
-    "author": "작가B",
-    "genre": "판타지",
-    "viewCount": 890000,
-    "likeCount": 32000,
-    "readTime": 90,
-    "platform": "네이버웹소설"
-  },
-  {
-    "title": "나 혼자만 레벨업",
-    "author": "작가C",
-    "genre": "액션",
-    "viewCount": 2100000,
-    "likeCount": 78000,
-    "readTime": 150,
-    "platform": "카카오페이지"
-  },
-  {
-    "title": "신과함께",
-    "author": "작가D",
-    "genre": "판타지",
-    "viewCount": 560000,
-    "likeCount": 21000,
-    "readTime": 60,
-    "platform": "리디북스"
-  },
-  {
-    "title": "오늘도 사랑스럽개",
-    "author": "작가E",
-    "genre": "로맨스",
-    "viewCount": 340000,
-    "likeCount": 15000,
-    "readTime": 45,
-    "platform": "조아라"
-  },
-  {
-    "title": "던전에서 만남을 추구하면 안 되는 걸까",
-    "author": "작가F",
-    "genre": "판타지",
-    "viewCount": 980000,
-    "likeCount": 36000,
-    "readTime": 110,
-    "platform": "네이버웹소설"
-  },
-  {
-    "title": "이세계 치트 마법사",
-    "author": "작가G",
-    "genre": "판타지",
-    "viewCount": 720000,
-    "likeCount": 28000,
-    "readTime": 85,
-    "platform": "카카오페이지"
-  },
-  {
-    "title": "용사가 마왕을 무찌르고",
-    "author": "작가H",
-    "genre": "판타지",
-    "viewCount": 450000,
-    "likeCount": 18000,
-    "readTime": 55,
-    "platform": "리디북스"
-  },
-  {
-    "title": "회귀자의 마법공학",
-    "author": "작가I",
-    "genre": "판타지",
-    "viewCount": 1100000,
-    "likeCount": 42000,
-    "readTime": 130,
-    "platform": "카카오페이지"
-  },
-  {
-    "title": "마법사의 딸",
-    "author": "작가J",
-    "genre": "로맨스판타지",
-    "viewCount": 670000,
-    "likeCount": 25000,
-    "readTime": 75,
-    "platform": "네이버웹소설"
-  }
-]
-
-
-
-
-
-
+{
+  "novels": [
+    {
+      "title": "재벌집 막내아들",
+      "author": "산경",
+      "genre": "현대판타지",
+      "viewCount": 1250000,
+      "likeCount": 45000,
+      "readTime": 120,
+      "platform": "네이버시리즈"
+    },
+    {
+      "title": "나 혼자만 레벨업",
+      "author": "추공",
+      "genre": "판타지",
+      "viewCount": 2100000,
+      "likeCount": 78000,
+      "readTime": 150,
+      "platform": "카카오페이지"
+    },
+    {
+      "title": "전지적 독자 시점",
+      "author": "싱숑",
+      "genre": "판타지",
+      "viewCount": 890000,
+      "likeCount": 32000,
+      "readTime": 90,
+      "platform": "네이버시리즈"
+    },
+    {
+      "title": "중증외상센터 : 골든 아워",
+      "author": "한산이가",
+      "genre": "현대판타지",
+      "viewCount": 560000,
+      "likeCount": 21000,
+      "readTime": 60,
+      "platform": "네이버시리즈"
+    },
+    {
+      "title": "역대급 영지 설계사",
+      "author": "문백경",
+      "genre": "판타지",
+      "viewCount": 340000,
+      "likeCount": 15000,
+      "readTime": 45,
+      "platform": "네이버시리즈"
+    },
+    {
+      "title": "탑아이돌의 막내 멤버가 되었다",
+      "author": "짜태",
+      "genre": "현대판타지",
+      "viewCount": 980000,
+      "likeCount": 36000,
+      "readTime": 110,
+      "platform": "카카오페이지"
+    },
+    {
+      "title": "광마회귀",
+      "author": "유진성",
+      "genre": "무협/회귀",
+      "viewCount": 740000,
+      "likeCount": 29500,
+      "readTime": 105,
+      "platform": "미정"
+    },
+    {
+      "title": "절대검감",
+      "author": "한중월야",
+      "genre": "무협",
+      "viewCount": 680000,
+      "likeCount": 31200,
+      "readTime": 95,
+      "platform": "미정"
+    },
+    {
+      "title": "괴력난신",
+      "author": "한중월야",
+      "genre": "무협",
+      "viewCount": 520000,
+      "likeCount": 24800,
+      "readTime": 85,
+      "platform": "미정"
+    },
+    {
+      "title": "나노마신",
+      "author": "한중월야",
+      "genre": "무협/SF",
+      "viewCount": 1600000,
+      "likeCount": 69000,
+      "readTime": 140,
+      "platform": "미정"
+    }
+  ],
+  "reviews": [
+    {
+      "title": "재벌집 막내아들",
+      "items": [
+        {
+          "reviewId": "R-0001",
+          "user": "goguma_92",
+          "rating": 4.7,
+          "spoiler": false,
+          "content": "회귀+재벌가 서사라서 초반 몰입감이 미쳤어요. 전개 빠르고 떡밥도 꽤 탄탄!",
+          "createdAt": "2025-12-17"
+        },
+        {
+          "reviewId": "R-0002",
+          "user": "realism_lover",
+          "rating": 4.3,
+          "spoiler": false,
+          "content": "비즈니스 파트가 재밌긴 한데 용어/흐름 따라가려면 집중 필요해요. 그래도 재밌음!",
+          "createdAt": "2025-12-16"
+        },
+        {
+          "reviewId": "R-0003",
+          "user": "late_night_reader",
+          "rating": 4.6,
+          "spoiler": false,
+          "content": "한 편만 보려다 새벽 순삭… 이런 류 좋아하시면 추천!",
+          "createdAt": "2025-12-14"
+        }
+      ]
+    },
+    {
+      "title": "나 혼자만 레벨업",
+      "items": [
+        {
+          "reviewId": "R-0004",
+          "user": "levelup_jam",
+          "rating": 4.8,
+          "spoiler": false,
+          "content": "성장형 먼치킨의 교과서 느낌! 전투 템포가 시원시원해서 스트레스 풀려요.",
+          "createdAt": "2025-12-17"
+        },
+        {
+          "reviewId": "R-0005",
+          "user": "dungeon_addict",
+          "rating": 4.5,
+          "spoiler": false,
+          "content": "설정 단순한데 그 단순함이 강점. 킬링타임으로 완전 좋음.",
+          "createdAt": "2025-12-13"
+        },
+        {
+          "reviewId": "R-0006",
+          "user": "critic_mode",
+          "rating": 4.2,
+          "spoiler": false,
+          "content": "후반부 갈수록 힘으로 밀어붙이는 느낌이 조금 있지만, 초중반 몰입감은 인정!",
+          "createdAt": "2025-12-11"
+        }
+      ]
+    },
+    {
+      "title": "전지적 독자 시점",
+      "items": [
+        {
+          "reviewId": "R-0007",
+          "user": "meta_reader",
+          "rating": 4.9,
+          "spoiler": false,
+          "content": "메타 서사 좋아하면 무조건. 세계관 확장감이 진짜 큼…",
+          "createdAt": "2025-12-15"
+        },
+        {
+          "reviewId": "R-0008",
+          "user": "kimdokja_team",
+          "rating": 4.7,
+          "spoiler": false,
+          "content": "캐릭터 관계성이 미쳤어요. 사건 터질 때마다 감정선이 같이 올라옴.",
+          "createdAt": "2025-12-12"
+        },
+        {
+          "reviewId": "R-0009",
+          "user": "slow_burn_ok",
+          "rating": 4.4,
+          "spoiler": false,
+          "content": "초반 설정 이해하는 데 살짝 시간이 걸렸는데, 넘어가면 진짜 재밌어요.",
+          "createdAt": "2025-12-10"
+        }
+      ]
+    },
+    {
+      "title": "중증외상센터 : 골든 아워",
+      "items": [
+        {
+          "reviewId": "R-0010",
+          "user": "medical_drama",
+          "rating": 4.6,
+          "spoiler": false,
+          "content": "긴박한 현장감이 살아있어서 몰입돼요. 텐션이 계속 유지되는 편!",
+          "createdAt": "2025-12-17"
+        },
+        {
+          "reviewId": "R-0011",
+          "user": "real_story_vibes",
+          "rating": 4.3,
+          "spoiler": false,
+          "content": "감정 과몰입 주의… 주인공이 버티는 이유가 설득력 있어요.",
+          "createdAt": "2025-12-09"
+        },
+        {
+          "reviewId": "R-0012",
+          "user": "fast_reader",
+          "rating": 4.1,
+          "spoiler": false,
+          "content": "전개 빠르고 사건이 계속 터져서 지루할 틈이 없어요.",
+          "createdAt": "2025-12-07"
+        }
+      ]
+    },
+    {
+      "title": "역대급 영지 설계사",
+      "items": [
+        {
+          "reviewId": "R-0013",
+          "user": "worldbuild_fan",
+          "rating": 4.7,
+          "spoiler": false,
+          "content": "영지 운영/설계 파트가 너무 재밌어요. 성장도 납득감 있게 진행됨!",
+          "createdAt": "2025-12-16"
+        },
+        {
+          "reviewId": "R-0014",
+          "user": "cozy_fantasy",
+          "rating": 4.4,
+          "spoiler": false,
+          "content": "큰 스트레스 없이 술술 읽혀요. 잔잔하게 재밌는 타입.",
+          "createdAt": "2025-12-12"
+        },
+        {
+          "reviewId": "R-0015",
+          "user": "planner_mode",
+          "rating": 4.2,
+          "spoiler": false,
+          "content": "설계/경영 요소 좋아하면 취향 저격. 다만 액션만 기대하면 아쉬울 수도!",
+          "createdAt": "2025-12-08"
+        }
+      ]
+    },
+    {
+      "title": "탑아이돌의 막내 멤버가 되었다",
+      "items": [
+        {
+          "reviewId": "R-0016",
+          "user": "idol_story",
+          "rating": 4.5,
+          "spoiler": false,
+          "content": "연예계물 특유의 긴장감+성장서사가 좋아요. 캐릭터 매력도 굿!",
+          "createdAt": "2025-12-17"
+        },
+        {
+          "reviewId": "R-0017",
+          "user": "stage_addict",
+          "rating": 4.3,
+          "spoiler": false,
+          "content": "무대 장면 묘사가 좋아서 상상 잘 돼요. 다음 화 계속 누르게 됨.",
+          "createdAt": "2025-12-13"
+        },
+        {
+          "reviewId": "R-0018",
+          "user": "drama_ok",
+          "rating": 4.1,
+          "spoiler": false,
+          "content": "고구마 구간이 아주 없는 건 아닌데, 보상 구간이 확실해서 만족!",
+          "createdAt": "2025-12-11"
+        }
+      ]
+    },
+    {
+      "title": "광마회귀",
+      "items": [
+        {
+          "reviewId": "R-0019",
+          "user": "murim_hype",
+          "rating": 4.8,
+          "spoiler": false,
+          "content": "광기+회귀 조합이 이렇게 시원할 수가… 주인공 캐릭터성이 압도적이에요.",
+          "createdAt": "2025-12-16"
+        },
+        {
+          "reviewId": "R-0020",
+          "user": "sword_and_laugh",
+          "rating": 4.5,
+          "spoiler": false,
+          "content": "웃긴데 또 멋있음. 전투도 속도감 좋고 대사 맛있어요.",
+          "createdAt": "2025-12-10"
+        },
+        {
+          "reviewId": "R-0021",
+          "user": "dark_tone",
+          "rating": 4.2,
+          "spoiler": false,
+          "content": "분위기 진득한 편이라 취향 탈 수는 있는데, 전개가 강해서 계속 읽게 돼요.",
+          "createdAt": "2025-12-06"
+        }
+      ]
+    },
+    {
+      "title": "절대검감",
+      "items": [
+        {
+          "reviewId": "R-0022",
+          "user": "blade_eye",
+          "rating": 4.6,
+          "spoiler": false,
+          "content": "검과 관련된 감각/설정이 흥미로워요. 무협 좋아하면 재밌게 볼 듯!",
+          "createdAt": "2025-12-15"
+        },
+        {
+          "reviewId": "R-0023",
+          "user": "murim_reader_01",
+          "rating": 4.4,
+          "spoiler": false,
+          "content": "초반 빌드업이 안정적이라 좋네요. 파워업이 급작스럽지 않아서 만족.",
+          "createdAt": "2025-12-12"
+        },
+        {
+          "reviewId": "R-0024",
+          "user": "plot_check",
+          "rating": 4.1,
+          "spoiler": false,
+          "content": "중간에 인물 많아져서 살짝 헷갈렸는데, 큰 흐름은 탄탄한 편이에요.",
+          "createdAt": "2025-12-05"
+        }
+      ]
+    },
+    {
+      "title": "괴력난신",
+      "items": [
+        {
+          "reviewId": "R-0025",
+          "user": "power_fantasy",
+          "rating": 4.5,
+          "spoiler": false,
+          "content": "괴력 컨셉을 끝까지 밀어붙여서 시원해요. 액션 좋아하면 추천!",
+          "createdAt": "2025-12-17"
+        },
+        {
+          "reviewId": "R-0026",
+          "user": "comedy_murim",
+          "rating": 4.3,
+          "spoiler": false,
+          "content": "진지함+개그가 적당히 섞여서 부담 없이 읽히네요.",
+          "createdAt": "2025-12-09"
+        },
+        {
+          "reviewId": "R-0027",
+          "user": "taste_split",
+          "rating": 4.0,
+          "spoiler": false,
+          "content": "호불호는 있을 듯! 저는 주인공 텐션이 잘 맞아서 재밌게 봤어요.",
+          "createdAt": "2025-12-04"
+        }
+      ]
+    },
+    {
+      "title": "나노마신",
+      "items": [
+        {
+          "reviewId": "R-0028",
+          "user": "nano_hype",
+          "rating": 4.7,
+          "spoiler": false,
+          "content": "무협에 SF 섞인 설정이 생각보다 잘 어울려요. 성장 체감이 큰 편!",
+          "createdAt": "2025-12-16"
+        },
+        {
+          "reviewId": "R-0029",
+          "user": "fast_powerup",
+          "rating": 4.4,
+          "spoiler": false,
+          "content": "사이다 전개 좋아하면 만족할 확률 높아요. 템포가 빠릅니다.",
+          "createdAt": "2025-12-11"
+        },
+        {
+          "reviewId": "R-0030",
+          "user": "detail_lover",
+          "rating": 4.2,
+          "spoiler": false,
+          "content": "설정이 방대해서 꼼꼼히 보면 더 재밌고, 가볍게 보면 그냥 시원하게 읽혀요.",
+          "createdAt": "2025-12-07"
+        }
+      ]
+    }
+  ]
+}

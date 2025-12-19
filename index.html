@@ -7,19 +7,21 @@
     <style>
       @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
       
-      body {
+      html, body {
         padding: 0;
         margin: 0;
         background-color: #1b1b1b;
         touch-action: none;
+        overflow: hidden; /* 스크롤 금지 */
         font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
       }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.11/lib/p5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <script src="https://unpkg.com/ml5@latest/dist/ml5.min.js"></script>
-    <!-- <script src="../addons/p5.sound.js"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.11/addons/p5.sound.min.js"></script>
     <script src="Bubble.js"></script>
+    <script src="PopupKeywordManager.js"></script>
     <script src="Jellyfish.js"></script>
     <script src="Seahorse.js"></script>
     <script src="Whale.js"></script>
@@ -33,6 +35,56 @@
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>
       eruda.init();
+    </script>
+    <script>
+      // 새로고침 방지 (화면 녹화 프로그램 등에서 발생하는 새로고침 차단)
+      window.addEventListener('beforeunload', function(e) {
+        // 기본 동작 방지
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      });
+      
+      // 페이지 언로드 방지
+      window.addEventListener('unload', function(e) {
+        e.preventDefault();
+        return false;
+      });
+      
+      // 키보드 단축키로 인한 새로고침 방지
+      document.addEventListener('keydown', function(e) {
+        // F5, Ctrl+R, Ctrl+Shift+R 차단
+        if (e.key === 'F5' || 
+            (e.ctrlKey && e.key === 'r') || 
+            (e.ctrlKey && e.shiftKey && e.key === 'R')) {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }
+      }, true);
+      
+      // 카메라 스트림 중단 시 새로고침 방지
+      document.addEventListener('visibilitychange', function(e) {
+        // 화면 녹화 프로그램이 페이지를 백그라운드로 만들 때 새로고침 방지
+        if (document.hidden) {
+          // 페이지가 숨겨져도 새로고침하지 않음
+          e.preventDefault();
+          return false;
+        }
+      });
+      
+      // 페이지 포커스 이벤트 처리 (화면 녹화 시 포커스 변경으로 인한 새로고침 방지)
+      window.addEventListener('blur', function(e) {
+        // 포커스를 잃어도 새로고침하지 않음
+        e.preventDefault();
+        return false;
+      });
+      
+      window.addEventListener('focus', function(e) {
+        // 포커스를 얻어도 새로고침하지 않음
+        e.preventDefault();
+        return false;
+      });
     </script>
   </head>
 

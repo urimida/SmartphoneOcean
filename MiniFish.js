@@ -36,15 +36,12 @@ class MiniFish {
     this.prevY = this.y;
     this.bubbleSpawnCounter = 0; // 기포 생성 간격 제어
     
-    // 키워드 팡팡 효과를 위한 변수들
-    this.popupKeywords = []; // {phrase, x, y, startTime, scale, angle}
-    this.lastMouseX = -1;
-    this.lastMouseY = -1;
-    this.lastKeywordSpawnTime = 0; // 마지막 키워드 생성 시간
+    // 키워드 팡팡 효과 매니저
+    this.popupKeywordManager = new PopupKeywordManager();
     
     // 플랑크톤 반짝임 효과를 위한 파티클들
     this.planktons = [];
-    const planktonCount = 10; // 기본 플랑크톤 개수 (미니라서 더 적게)
+    const planktonCount = 5; // 기본 플랑크톤 개수 (성능 최적화: 10 -> 5)
     for (let i = 0; i < planktonCount; i++) {
       this.planktons.push({
         x: random(-this.size * 3, this.size * 3),
@@ -92,7 +89,7 @@ class MiniFish {
     
     // 이동할 때마다 뒤쪽에 기포 생성 (빈도 대폭 감소)
     this.bubbleSpawnCounter++;
-    if (distanceSq > 0.09 && this.bubbleSpawnCounter >= 20) { // 20프레임마다 기포 생성 (성능 최적화, 미니라서 덜 자주)
+    if (distanceSq > 0.09 && this.bubbleSpawnCounter >= 30) { // 30프레임마다 기포 생성 (성능 최적화: 20 -> 30)
       this.bubbleSpawnCounter = 0;
       // 뒤쪽 위치 계산 (이동 방향의 반대)
       const bubbleX = this.prevX - dx * 0.3;
@@ -218,6 +215,17 @@ class MiniFish {
     if (this.novelData.platform) {
       content += `${this.novelData.platform}  •  `;
     }
+    
+    // 리뷰 내용도 텍스트에 포함 (작성자는 제외)
+    if (this.novelData.reviews && Array.isArray(this.novelData.reviews)) {
+      for (let i = 0; i < this.novelData.reviews.length; i++) {
+        const review = this.novelData.reviews[i];
+        if (review.content) {
+          content += `${review.content}  •  `;
+        }
+        // review.user는 표출하지 않음
+      }
+    }
 
     content = content.toUpperCase();
 
@@ -250,11 +258,19 @@ class MiniFish {
     
     // 동물 이름 표시 (텍스트 실루엣 위쪽)
     const nameY = startY - 40;
-    textFont(uiFont || 'ThinDungGeunMo');
+    textFont(typeof titleFont !== 'undefined' && titleFont ? titleFont : (uiFont || 'ThinDungGeunMo'));
     textAlign(CENTER, CENTER);
     textSize(24);
     fill(200, 220, 255, 255);
-    text("웹소설 미니 물고기", cx, nameY);
+    // 제목에 웹소설 제목 포함
+    let titleText = "웹소설 미니 물고기";
+    if (this.novelData && this.novelData.title) {
+      const novelTitle = this.novelData.title;
+      // 제목이 길면 앞부분만 사용 (최대 12자)
+      const shortTitle = novelTitle.length > 12 ? novelTitle.substring(0, 12) + "..." : novelTitle;
+      titleText = `웹소설 미니 물고기: ${shortTitle}`;
+    }
+    text(titleText, cx, nameY);
     
     // 시간 기반 움직임 (읽은 시간에 따라 떼 행동 증가)
     const readTime = this.novelData.readTime || 0;
@@ -342,11 +358,11 @@ class MiniFish {
         tRow * 0.3 // 약간만 섞기
       );
       
-      // 원본 색상과 바다 테마 색상을 혼합 (7:3 비율)
+      // 원본 색상과 바다 테마 색상을 혼합 (가독성을 위해 더 진하게)
       const col = lerpColor(
-        color(pos.r, pos.g, pos.b, 250),
+        color(pos.r, pos.g, pos.b, 255),
         oceanTint,
-        0.3
+        0.2
       );
       
       // 움직임 효과 (떼지어 유혹하듯 움직임, 읽은 시간에 따라 증가)
@@ -368,13 +384,18 @@ class MiniFish {
       
       textSize(textSizeVal);
       textStyle(BOLD);
-      fill(col);
       
+      // 외곽선 추가로 가독성 향상
       push();
       translate(finalX, finalY);
       // 자연스러운 회전 (떼 행동)
       const rotation = (waveX + waveY) * 0.03 * animationIntensity;
       rotate(rotation);
+      
+      // 외곽선 (어두운 색)
+      stroke(20, 40, 80, 200);
+      strokeWeight(2);
+      fill(col);
       text(ch, 0, 0);
       pop();
     }
@@ -384,11 +405,42 @@ class MiniFish {
     const animalCenterY = cy + headOffsetY;
     const animalRadius = max(minifishDisplayWidth, minifishDisplayHeight) / 2;
     
-    // 마우스가 동물 영역 위에 있는지 확인
-    const mouseDist = dist(mouseX, mouseY, animalCenterX, animalCenterY);
-    const isHovering = mouseDist < animalRadius * 1.2;
+    // 텍스트 모달이 열려있을 때는 손 위치와 마우스 위치 둘 다 확인
+    const isTextDetailOpen = typeof showNovelDetail !== 'undefined' && showNovelDetail;
     
-    if (isHovering && this.novelData) {
+    // 마우스 위치로 호버링 확인
+    const mouseDist = dist(mouseX, mouseY, animalCenterX, animalCenterY);
+    const isMouseHovering = mouseDist < animalRadius * 1.2;
+    
+    // 손 위치로 호버링 확인 (텍스트 모달이 열려있고 손 위치가 있을 때)
+    let isHandHovering = false;
+    let handHoverX = width / 2;
+    let handHoverY = height / 2;
+    if (isTextDetailOpen && typeof window !== 'undefined' && typeof window.virtualMouseX !== 'undefined' && typeof window.virtualMouseY !== 'undefined') {
+      const handDist = dist(window.virtualMouseX, window.virtualMouseY, animalCenterX, animalCenterY);
+      isHandHovering = handDist < animalRadius * 1.2;
+      handHoverX = window.virtualMouseX;
+      handHoverY = window.virtualMouseY;
+    }
+    
+    // 마우스 또는 손 중 하나라도 호버링되면 키워드 표시
+    const isHovering = isMouseHovering || isHandHovering;
+    
+    // 제스처 감지 또는 마우스/손 호버링 시 텍스트 표시
+    const shouldShowText = isHovering || (typeof gestureWaveDetected !== 'undefined' && gestureWaveDetected);
+    
+    // 호버링 위치 결정: 마우스가 호버링 중이면 마우스 위치, 손이 호버링 중이면 손 위치, 둘 다면 마우스 우선
+    let textX = width / 2;
+    let textY = height / 2;
+    if (isMouseHovering) {
+      textX = mouseX;
+      textY = mouseY;
+    } else if (isHandHovering) {
+      textX = handHoverX;
+      textY = handHoverY;
+    }
+    
+    if (shouldShowText && this.novelData) {
       // 호버 시작 시간 기록
       if (this.hoverStartTime === null) {
         this.hoverStartTime = millis();
@@ -408,112 +460,35 @@ class MiniFish {
       if (this.novelData.genre) keyPhrases.push(this.novelData.genre);
       if (this.novelData.platform) keyPhrases.push(this.novelData.platform);
       
-      // 마우스 위치가 변경되었는지 확인 (팡팡 효과 트리거)
-      const mouseMoved = (this.lastMouseX !== mouseX || this.lastMouseY !== mouseY);
-      const currentTime = millis();
-      const timeSinceLastSpawn = currentTime - this.lastKeywordSpawnTime;
-      
-      // 3초에 1번만 키워드 생성 (천천히 나타나도록)
-      if (mouseMoved && keyPhrases.length > 0 && timeSinceLastSpawn >= 300) {
-        this.lastMouseX = mouseX;
-        this.lastMouseY = mouseY;
-        this.lastKeywordSpawnTime = currentTime;
-        
-        // 마우스 위치 근처에서 키워드 팡팡 효과 (한 번에 1개만)
-        const phrase = keyPhrases[floor(random(keyPhrases.length))];
-        const angle = random(TWO_PI);
-        const distance = random(30, 60); // 마우스로부터의 거리
-        const popupX = mouseX + cos(angle) * distance;
-        const popupY = mouseY + sin(angle) * distance;
-        
-        this.popupKeywords.push({
-          phrase: phrase,
-          x: popupX,
-          y: popupY,
-          startTime: currentTime,
-          angle: angle,
-          distance: distance
-        });
-      } else if (mouseMoved) {
-        // 마우스는 움직였지만 시간 제한으로 키워드 생성 안 함
-        this.lastMouseX = mouseX;
-        this.lastMouseY = mouseY;
-      }
-      
-      // 팡팡 효과 키워드들 업데이트 및 그리기
-      const drawTime = millis();
-      push();
-      textFont(uiFont || 'ThinDungGeunMo');
-      textAlign(CENTER, CENTER);
-      textSize(14);
-      
-      for (let i = this.popupKeywords.length - 1; i >= 0; i--) {
-        const keyword = this.popupKeywords[i];
-        const elapsed = drawTime - keyword.startTime;
-        const popDuration = 800; // 팝업 애니메이션 시간 (더 천천히)
-        const fadeDuration = 4000; // 페이드아웃 시간 (더 길게)
-        
-        if (elapsed < 0) continue; // 아직 나타나지 않음
-        
-        if (elapsed > popDuration + fadeDuration) {
-          // 완전히 사라짐
-          this.popupKeywords.splice(i, 1);
-          continue;
-        }
-        
-        // 팡팡 효과 (스케일 애니메이션, 더 천천히)
-        let scaleValue = 1;
-        if (elapsed < popDuration) {
-          const popProgress = elapsed / popDuration;
-          // 더 부드럽고 천천히 나타나도록 조정
-          scaleValue = easeOutBack(constrain(popProgress, 0, 1));
-        }
-        
-        // 페이드아웃
-        let alpha = 255;
-        if (elapsed > popDuration) {
-          const fadeProgress = (elapsed - popDuration) / fadeDuration;
-          alpha = 255 * (1 - fadeProgress);
-        }
-        
-        // 위치에 약간의 움직임 추가 (팡팡 효과)
-        const wobbleX = sin(elapsed * 0.01) * 2;
-        const wobbleY = cos(elapsed * 0.015) * 2;
-        const finalX = keyword.x + wobbleX;
-        const finalY = keyword.y + wobbleY;
-        
-        if (alpha > 0) {
-          const textW = textWidth(keyword.phrase) + 20;
-          const textH = 24;
-          
-          push();
-          translate(finalX, finalY);
-          scale(scaleValue);
-          
-          // 배경 (약간 반투명)
-          fill(0, 0, 0, alpha * 0.7);
-          noStroke();
-          rect(-textW / 2, -textH / 2, textW, textH, 6);
-          
-          // 텍스트
-          fill(255, 255, 200, alpha);
-          text(keyword.phrase, 0, 0);
-          pop();
+      // 리뷰에서 키워드 추출 (리뷰 내용의 핵심 단어들)
+      if (this.novelData.reviews && Array.isArray(this.novelData.reviews)) {
+        for (let i = 0; i < Math.min(this.novelData.reviews.length, 3); i++) {
+          const review = this.novelData.reviews[i];
+          if (review.content) {
+            // 리뷰 내용에서 짧은 핵심 문구 추출 (20자 이내)
+            const reviewText = review.content;
+            if (reviewText.length > 20) {
+              keyPhrases.push(reviewText.substring(0, 20) + "...");
+            } else {
+              keyPhrases.push(reviewText);
+            }
+          }
         }
       }
-      pop();
+      
+      // 키워드 팡팡 효과 처리
+      this.popupKeywordManager.trySpawnKeyword(textX, textY, keyPhrases);
+      this.popupKeywordManager.updateAndDraw();
     } else {
       // 호버가 끝나면 시간 리셋 및 키워드 초기화
       this.hoverStartTime = null;
-      this.popupKeywords = [];
-      this.lastMouseX = -1;
-      this.lastMouseY = -1;
+      this.popupKeywordManager.reset();
     }
 
     // -------------------------
     // 닫기 버튼 (미니 물고기 아래)
     // -------------------------
-    const btnY = cy + headOffsetY + minifishDisplayHeight / 2 + 80;
+    const btnY = cy + headOffsetY + minifishDisplayHeight / 2 + 115;
     const btnW = 140;
     const btnH = 35;
     const btnX = cx - btnW / 2;

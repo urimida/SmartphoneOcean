@@ -47,11 +47,11 @@ class Swimmer {
     // 속도
     const speed = sqrt(this.vx * this.vx + this.vy * this.vy);
 
-    // 버블 생성
+    // 버블 생성 (다이버는 텍스트 기포)
     if (speed > 0.05 && random() < BUBBLE_SPAWN_PROB_SWIM) {
       const bubbleX = this.x + random(-3, 3);
       const bubbleY = this.y + random(-2, 2);
-      spawnBubble(bubbleX, bubbleY);
+      spawnBubble(bubbleX, bubbleY, true); // 텍스트 기포
     }
 
     // 감속
@@ -198,7 +198,8 @@ class Swimmer {
     // 중심은 밝고, 짧은 거리 안에서 여러 단계로 투명해졌다가
     // 가장 바깥쪽에만 아주 옅은 링(약 10% 밝기)이 남도록 구성
     const haloBaseSize = 14 * 1.2; // 전체 크기 1.2배 확대
-    const haloPulse = 1 + sin(this.strokePhase * 0.6) * 0.12;
+    // 펄스를 매우 느리고 작게 만들어 번쩍거림 방지
+    const haloPulse = 1 + sin(millis() * 0.001) * 0.03; // 매우 느리고 작은 펄스
     const haloSizeOuter = haloBaseSize * haloPulse * this.scaleFactor * 1.2;
     const haloSizeInner = haloBaseSize * haloPulse * this.scaleFactor * 0.7;
 
@@ -211,7 +212,7 @@ class Swimmer {
     pg.ellipse(0, 0, haloSizeInner * 0.4, haloSizeInner * 0.4);
 
     // 더 많은 단계의 그라데이션 레이어
-    const layerCount = 20; // 단계 수
+    const layerCount = 12; // 단계 수 (성능 최적화: 20 -> 12)
     for (let i = 0; i < layerCount; i++) {
       const t = i / (layerCount - 1); // 0 ~ 1
 
@@ -233,10 +234,27 @@ class Swimmer {
 
       if (alpha <= 0.5) continue; // 극도로 낮은 값은 스킵
 
-      // 색은 거의 흰색에 가깝게, 살짝만 노란 톤
-      const colR = 255;
-      const colG = lerp(255, 240, t);
-      const colB = lerp(255, 210, t);
+      // 감정에 따른 색상 적용 (전역 함수 사용)
+      let colR, colG, colB;
+      if (typeof getEmotionHaloColor === 'function') {
+        const emotionColor = getEmotionHaloColor();
+        // 감정 색상과 기본 색상을 그라데이션으로 혼합
+        const baseR = 255;
+        const baseG = lerp(255, 240, t);
+        const baseB = lerp(255, 210, t);
+        // 바깥쪽으로 갈수록 감정 색상이 더 강하게 (t가 클수록)
+        // 감정 신뢰도도 고려 (전체 레이어에 일관되게 적용)
+        const baseEmotionMix = typeof emotionConfidence !== 'undefined' && emotionConfidence > 0 ? emotionConfidence : 0.8;
+        const emotionMix = t * 0.9 * baseEmotionMix; // 최대 90%까지 감정 색상 반영
+        colR = lerp(baseR, emotionColor.r, emotionMix);
+        colG = lerp(baseG, emotionColor.g, emotionMix);
+        colB = lerp(baseB, emotionColor.b, emotionMix);
+      } else {
+        // 기본 색상 (감정 인식이 없을 때)
+        colR = 255;
+        colG = lerp(255, 240, t);
+        colB = lerp(255, 210, t);
+      }
       pg.fill(colR, colG, colB, alpha);
 
       // 완전한 원 (가로/세로 동일)

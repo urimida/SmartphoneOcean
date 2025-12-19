@@ -35,15 +35,12 @@ class Whale {
     this.prevY = this.y;
     this.bubbleSpawnCounter = 0; // 기포 생성 간격 제어
     
-    // 키워드 팡팡 효과를 위한 변수들
-    this.popupKeywords = []; // {phrase, x, y, startTime, scale, angle}
-    this.lastMouseX = -1;
-    this.lastMouseY = -1;
-    this.lastKeywordSpawnTime = 0; // 마지막 키워드 생성 시간
+    // 키워드 팡팡 효과 매니저
+    this.popupKeywordManager = new PopupKeywordManager();
     
     // 반짝임 효과를 위한 파티클들
     this.sparkles = [];
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 15; i++) { // 성능 최적화: 30 -> 15
       this.sparkles.push({
         x: random(-this.size, this.size),
         y: random(-this.size * 0.6, this.size * 0.6),
@@ -88,7 +85,7 @@ class Whale {
     
     // 이동할 때마다 뒤쪽에 기포 생성 (빈도 대폭 감소, 고래는 1개만)
     this.bubbleSpawnCounter++;
-    if (distanceSq > 0.09 && this.bubbleSpawnCounter >= 12) { // 12프레임마다 기포 생성 (성능 최적화)
+    if (distanceSq > 0.09 && this.bubbleSpawnCounter >= 20) { // 20프레임마다 기포 생성 (성능 최적화: 12 -> 20)
       this.bubbleSpawnCounter = 0;
       // 뒤쪽 위치 계산 (이동 방향의 반대)
       const bubbleX = this.prevX - dx * 0.4;
@@ -229,11 +226,26 @@ class Whale {
     
     // 동물 이름 표시 (텍스트 실루엣 위쪽)
     const nameY = startY - 40;
-    textFont(uiFont || 'ThinDungGeunMo');
+    textFont(typeof titleFont !== 'undefined' && titleFont ? titleFont : (uiFont || 'ThinDungGeunMo'));
     textAlign(CENTER, CENTER);
     textSize(24);
     fill(200, 220, 255, 255);
-    text("숏폼 고래", cx, nameY);
+    // 제목에 컨텐츠 정보 포함 (summary에서 크리에이터나 제목 추출)
+    let titleText = "숏폼 고래";
+    if (this.shortformData && this.shortformData.summary) {
+      const summary = this.shortformData.summary;
+      // summary에서 크리에이터 이름 추출 (예: "침착맨", "파카 랄로" 등)
+      // 또는 summary의 앞부분을 사용
+      const creatorMatch = summary.match(/(침착맨|랄로|파카 랄로|.*?)(?:방송|보고|에서|이|의)/);
+      if (creatorMatch && creatorMatch[1]) {
+        titleText = `숏폼 고래: ${creatorMatch[1].trim()}`;
+      } else {
+        // 크리에이터를 찾지 못하면 summary의 앞부분 사용 (최대 10자)
+        const shortSummary = summary.length > 10 ? summary.substring(0, 10) + "..." : summary;
+        titleText = `숏폼 고래: ${shortSummary}`;
+      }
+    }
+    text(titleText, cx, nameY);
     
     // 시간 기반 움직임
     const baseTime = frameCount * 0.03;
@@ -319,11 +331,11 @@ class Whale {
         tRow * 0.3 // 약간만 섞기
       );
       
-      // 원본 색상과 바다 테마 색상을 혼합 (7:3 비율)
+      // 원본 색상과 바다 테마 색상을 혼합 (가독성을 위해 더 진하게)
       const col = lerpColor(
-        color(pos.r, pos.g, pos.b, 250),
+        color(pos.r, pos.g, pos.b, 255),
         oceanTint,
-        0.3
+        0.2
       );
       
       // 움직임 효과 (고래가 살아있는 느낌, 최소화하여 가독성 향상)
@@ -342,12 +354,17 @@ class Whale {
       
       textSize(textSizeVal);
       textStyle(BOLD);
-      fill(col);
       
+      // 외곽선 추가로 가독성 향상
       push();
       translate(finalX, finalY);
       // 자연스러운 회전 (최소화)
       rotate(sin(baseTime + pos.pixelX * 0.01) * 0.05); // 회전 감소
+      
+      // 외곽선 (어두운 색)
+      stroke(20, 40, 80, 200);
+      strokeWeight(2);
+      fill(col);
       text(ch, 0, 0);
       pop();
     }
@@ -357,11 +374,42 @@ class Whale {
     const animalCenterY = cy + headOffsetY;
     const animalRadius = max(whaleDisplayWidth, whaleDisplayHeight) / 2;
     
-    // 마우스가 동물 영역 위에 있는지 확인
-    const mouseDist = dist(mouseX, mouseY, animalCenterX, animalCenterY);
-    const isHovering = mouseDist < animalRadius * 1.2;
+    // 텍스트 모달이 열려있을 때는 손 위치와 마우스 위치 둘 다 확인
+    const isTextDetailOpen = typeof showShortformDetail !== 'undefined' && showShortformDetail;
     
-    if (isHovering && this.shortformData) {
+    // 마우스 위치로 호버링 확인
+    const mouseDist = dist(mouseX, mouseY, animalCenterX, animalCenterY);
+    const isMouseHovering = mouseDist < animalRadius * 1.2;
+    
+    // 손 위치로 호버링 확인 (텍스트 모달이 열려있고 손 위치가 있을 때)
+    let isHandHovering = false;
+    let handHoverX = width / 2;
+    let handHoverY = height / 2;
+    if (isTextDetailOpen && typeof window !== 'undefined' && typeof window.virtualMouseX !== 'undefined' && typeof window.virtualMouseY !== 'undefined') {
+      const handDist = dist(window.virtualMouseX, window.virtualMouseY, animalCenterX, animalCenterY);
+      isHandHovering = handDist < animalRadius * 1.2;
+      handHoverX = window.virtualMouseX;
+      handHoverY = window.virtualMouseY;
+    }
+    
+    // 마우스 또는 손 중 하나라도 호버링되면 키워드 표시
+    const isHovering = isMouseHovering || isHandHovering;
+    
+    // 제스처 감지 또는 마우스/손 호버링 시 텍스트 표시
+    const shouldShowText = isHovering || (typeof gestureWaveDetected !== 'undefined' && gestureWaveDetected);
+    
+    // 호버링 위치 결정: 마우스가 호버링 중이면 마우스 위치, 손이 호버링 중이면 손 위치, 둘 다면 마우스 우선
+    let textX = width / 2;
+    let textY = height / 2;
+    if (isMouseHovering) {
+      textX = mouseX;
+      textY = mouseY;
+    } else if (isHandHovering) {
+      textX = handHoverX;
+      textY = handHoverY;
+    }
+    
+    if (shouldShowText && this.shortformData) {
       // 호버 시작 시간 기록
       if (this.hoverStartTime === null) {
         this.hoverStartTime = millis();
@@ -387,112 +435,19 @@ class Whale {
         });
       }
       
-      // 마우스 위치가 변경되었는지 확인 (팡팡 효과 트리거)
-      const mouseMoved = (this.lastMouseX !== mouseX || this.lastMouseY !== mouseY);
-      const currentTime = millis();
-      const timeSinceLastSpawn = currentTime - this.lastKeywordSpawnTime;
-      
-      // 3초에 1번만 키워드 생성 (천천히 나타나도록)
-      if (mouseMoved && keyPhrases.length > 0 && timeSinceLastSpawn >= 300) {
-        this.lastMouseX = mouseX;
-        this.lastMouseY = mouseY;
-        this.lastKeywordSpawnTime = currentTime;
-        
-        // 마우스 위치 근처에서 키워드 팡팡 효과 (한 번에 1개만)
-        const phrase = keyPhrases[floor(random(keyPhrases.length))];
-        const angle = random(TWO_PI);
-        const distance = random(30, 60); // 마우스로부터의 거리
-        const popupX = mouseX + cos(angle) * distance;
-        const popupY = mouseY + sin(angle) * distance;
-        
-        this.popupKeywords.push({
-          phrase: phrase,
-          x: popupX,
-          y: popupY,
-          startTime: currentTime,
-          angle: angle,
-          distance: distance
-        });
-      } else if (mouseMoved) {
-        // 마우스는 움직였지만 시간 제한으로 키워드 생성 안 함
-        this.lastMouseX = mouseX;
-        this.lastMouseY = mouseY;
-      }
-      
-      // 팡팡 효과 키워드들 업데이트 및 그리기
-      const drawTime = millis();
-      push();
-      textFont(uiFont || 'ThinDungGeunMo');
-      textAlign(CENTER, CENTER);
-      textSize(14);
-      
-      for (let i = this.popupKeywords.length - 1; i >= 0; i--) {
-        const keyword = this.popupKeywords[i];
-        const elapsed = drawTime - keyword.startTime;
-        const popDuration = 800; // 팝업 애니메이션 시간 (더 천천히)
-        const fadeDuration = 4000; // 페이드아웃 시간 (더 길게)
-        
-        if (elapsed < 0) continue; // 아직 나타나지 않음
-        
-        if (elapsed > popDuration + fadeDuration) {
-          // 완전히 사라짐
-          this.popupKeywords.splice(i, 1);
-          continue;
-        }
-        
-        // 팡팡 효과 (스케일 애니메이션, 더 천천히)
-        let scaleValue = 1;
-        if (elapsed < popDuration) {
-          const popProgress = elapsed / popDuration;
-          // 더 부드럽고 천천히 나타나도록 조정
-          scaleValue = easeOutBack(constrain(popProgress, 0, 1));
-        }
-        
-        // 페이드아웃
-        let alpha = 255;
-        if (elapsed > popDuration) {
-          const fadeProgress = (elapsed - popDuration) / fadeDuration;
-          alpha = 255 * (1 - fadeProgress);
-        }
-        
-        // 위치에 약간의 움직임 추가 (팡팡 효과)
-        const wobbleX = sin(elapsed * 0.01) * 2;
-        const wobbleY = cos(elapsed * 0.015) * 2;
-        const finalX = keyword.x + wobbleX;
-        const finalY = keyword.y + wobbleY;
-        
-        if (alpha > 0) {
-          const textW = textWidth(keyword.phrase) + 20;
-          const textH = 24;
-          
-          push();
-          translate(finalX, finalY);
-          scale(scaleValue);
-          
-          // 배경 (약간 반투명)
-          fill(0, 0, 0, alpha * 0.7);
-          noStroke();
-          rect(-textW / 2, -textH / 2, textW, textH, 6);
-          
-          // 텍스트
-          fill(255, 255, 200, alpha);
-          text(keyword.phrase, 0, 0);
-          pop();
-        }
-      }
-      pop();
+      // 키워드 팡팡 효과 처리
+      this.popupKeywordManager.trySpawnKeyword(textX, textY, keyPhrases);
+      this.popupKeywordManager.updateAndDraw();
     } else {
       // 호버가 끝나면 시간 리셋 및 키워드 초기화
       this.hoverStartTime = null;
-      this.popupKeywords = [];
-      this.lastMouseX = -1;
-      this.lastMouseY = -1;
+      this.popupKeywordManager.reset();
     }
 
     // -------------------------
     // 닫기 버튼 (고래 아래)
     // -------------------------
-    const btnY = cy + headOffsetY + whaleDisplayHeight / 2 + 80;
+    const btnY = cy + headOffsetY + whaleDisplayHeight / 2 + 115;
     const btnW = 140;
     const btnH = 35;
     const btnX = cx - btnW / 2;
