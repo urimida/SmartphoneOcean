@@ -3661,15 +3661,26 @@ function mousePressed() {
 
   // 모달이 열려있으면 모달 클릭을 최우선 처리
   // 생물 상세 모달 닫기 버튼 처리 (최우선)
-  // 실제 마우스 클릭은 항상 실제 mouseX, mouseY를 사용해야 함
+  // 카메라 센서 사용 시 손 위치도 함께 체크
   if (showChatDetail || showDeliveryDetail || showShortformDetail || showShoppingDetail || showNovelDetail) {
     const btnW = 140;
     const btnH = 35;
     const btnX = closeHintX - btnW / 2;
     const btnY = closeHintY;
-    // 실제 마우스 클릭은 항상 실제 mouseX, mouseY를 사용
-    const isButtonClick = mouseX >= btnX && mouseX <= btnX + btnW &&
-                          mouseY >= btnY - btnH / 2 && mouseY <= btnY + btnH / 2;
+    
+    // 실제 마우스 클릭 체크
+    const isMouseButtonClick = mouseX >= btnX && mouseX <= btnX + btnW &&
+                                mouseY >= btnY - btnH / 2 && mouseY <= btnY + btnH / 2;
+    
+    // 카메라 센서 사용 시 손 위치로도 클릭 체크
+    let isHandButtonClick = false;
+    if (handControlEnabled && typeof window.virtualMouseX !== 'undefined' && typeof window.virtualMouseY !== 'undefined') {
+      isHandButtonClick = window.virtualMouseX >= btnX && window.virtualMouseX <= btnX + btnW &&
+                          window.virtualMouseY >= btnY - btnH / 2 && window.virtualMouseY <= btnY + btnH / 2;
+    }
+    
+    // 마우스 또는 손 중 하나라도 버튼을 클릭했으면 닫기
+    const isButtonClick = isMouseButtonClick || isHandButtonClick;
     
     if (isButtonClick) {
       if (showChatDetail && currentModal && currentModal.jellyfish) {
